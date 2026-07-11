@@ -68,12 +68,12 @@ if (!color || (!placa && !candado)) {
       return NextResponse.json({ error: "Debes registrar al menos placa o candado, y el color es obligatorio" }, { status: 400 });
     }
 
-    const librasNum = parseInt(libras);
-    const onzasNum = parseInt(onzas);
-    if (librasNum < 1 || librasNum > 6) {
+    const librasNum = Number(libras);
+    const onzasNum = Number(onzas);
+    if (!Number.isFinite(librasNum) || librasNum < 1 || librasNum > 6) {
       return NextResponse.json({ error: "Libras debe estar entre 1 y 6" }, { status: 400 });
     }
-    if (onzasNum < 1 || onzasNum > 15) {
+    if (!Number.isFinite(onzasNum) || onzasNum < 1 || onzasNum > 15) {
       return NextResponse.json({ error: "Onzas debe estar entre 1 y 15" }, { status: 400 });
     }
 
