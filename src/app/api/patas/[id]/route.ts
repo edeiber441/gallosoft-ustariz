@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -19,6 +20,7 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   }
 
   await sql`UPDATE patas SET nombre = ${nombre.trim()} WHERE id = ${parseInt(id)}`;
+  revalidatePath("/criadores");
   return NextResponse.json({ ok: true });
 }
 
@@ -30,5 +32,6 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
 
   const { id } = await ctx.params;
   await sql`DELETE FROM patas WHERE id = ${parseInt(id)}`;
+  revalidatePath("/criadores");
   return NextResponse.json({ ok: true });
 }

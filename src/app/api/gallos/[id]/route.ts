@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -44,10 +45,13 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: "Onzas debe estar entre 1 y 15" }, { status: 400 });
     }
 
+    const placaVal = placa != null && placa !== "" ? parseInt(placa) : null;
+    const candadoVal = candado != null && candado !== "" ? parseInt(candado) : null;
+
     await sql`
       UPDATE gallos SET
-        placa = ${placa ? parseInt(placa) : null},
-        candado = ${candado ? parseInt(candado) : null},
+        placa = ${placaVal},
+        candado = ${candadoVal},
         criador_id = ${criador_id ? parseInt(criador_id) : null},
         color = ${color},
         imagen = ${imagen || null},
@@ -58,6 +62,8 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
         pico = ${pico || null}
       WHERE id = ${parseInt(id)}`;
 
+    revalidatePath("/gallos");
+    revalidatePath("/");
     return NextResponse.json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
@@ -76,5 +82,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
 
   const { id } = await ctx.params;
   await sql`DELETE FROM gallos WHERE id = ${parseInt(id)}`;
+  revalidatePath("/gallos");
+  revalidatePath("/");
   return NextResponse.json({ ok: true });
 }

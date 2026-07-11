@@ -2,6 +2,8 @@ import { sql } from "@/lib/db";
 import Link from "next/link";
 import type { Stats } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 async function getStats(): Promise<Stats> {
   const { rows: totalRows } = await sql`SELECT COUNT(*)::int AS total FROM gallos`;
   const total = totalRows[0].total as number;

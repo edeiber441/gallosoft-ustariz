@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { rows } = await sql`INSERT INTO criadores (nombre) VALUES (${nombre.trim()}) RETURNING id, nombre`;
+    revalidatePath("/criadores");
     return NextResponse.json(rows[0]);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido";

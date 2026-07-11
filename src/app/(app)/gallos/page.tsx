@@ -3,6 +3,8 @@ import Link from "next/link";
 import GalloSearch from "@/components/GalloSearch";
 import type { Gallo } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 async function getGallos(searchParams: { placa?: string; candado?: string; criador_id?: string }): Promise<Gallo[]> {
   const { placa, candado, criador_id } = searchParams;
 

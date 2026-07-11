@@ -2,6 +2,8 @@ import { sql } from "@/lib/db";
 import GalloForm from "@/components/GalloForm";
 import type { Gallo } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditarGalloPage({
   params,
 }: {

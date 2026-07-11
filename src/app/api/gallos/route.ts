@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -13,37 +14,30 @@ export async function GET(request: NextRequest) {
   const candado = searchParams.get("candado");
   const criador = searchParams.get("criador");
 
-  let query = sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
-      c.id AS criador_id, c.nombre AS criador_nombre
-    FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id WHERE 1=1`;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = query;
-
   if (placa) {
-    query = sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+    const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
       g.cresta, g.patas, g.pico, g.criado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
-      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id WHERE g.placa = ${parseInt(placa)} ORDER BY g.criado_en DESC`;
-    const { rows } = await query;
+      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
+      WHERE g.placa = ${parseInt(placa)} ORDER BY g.criado_en DESC`;
     return NextResponse.json(rows);
   }
 
   if (candado) {
-    query = sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+    const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
       g.cresta, g.patas, g.pico, g.criado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
-      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id WHERE g.candado = ${parseInt(candado)} ORDER BY g.criado_en DESC`;
-    const { rows } = await query;
+      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
+      WHERE g.candado = ${parseInt(candado)} ORDER BY g.criado_en DESC`;
     return NextResponse.json(rows);
   }
 
   if (criador) {
-    query = sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+    const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
       g.cresta, g.patas, g.pico, g.criado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
-      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id WHERE c.nombre ILIKE ${"%" + criador + "%"} ORDER BY g.criado_en DESC`;
-    const { rows } = await query;
+      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
+      WHERE c.nombre ILIKE ${"%" + criador + "%"} ORDER BY g.criado_en DESC`;
     return NextResponse.json(rows);
   }
 
@@ -64,7 +58,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { placa, candado, criador_id, color, imagen, libras, onzas, cresta, patas, pico } = body;
 
-if (!color || (!placa && !candado)) {
+    if (!color || (!placa && !candado)) {
       return NextResponse.json({ error: "Debes registrar al menos placa o candado, y el color es obligatorio" }, { status: 400 });
     }
 
@@ -77,15 +71,21 @@ if (!color || (!placa && !candado)) {
       return NextResponse.json({ error: "Onzas debe estar entre 1 y 15" }, { status: 400 });
     }
 
+    const placaVal = placa != null && placa !== "" ? parseInt(placa) : null;
+    const candadoVal = candado != null && candado !== "" ? parseInt(candado) : null;
+
     const { rows } = await sql`
       INSERT INTO gallos (placa, candado, criador_id, color, imagen, libras, onzas, cresta, patas, pico, creado_por)
-      VALUES (${placa ? parseInt(placa) : null}, ${candado ? parseInt(candado) : null}, ${criador_id ? parseInt(criador_id) : null},
+      VALUES (${placaVal}, ${candadoVal}, ${criador_id ? parseInt(criador_id) : null},
         ${color}, ${imagen || null}, ${librasNum}, ${onzasNum},
         ${cresta || null}, ${patas || null}, ${pico || null}, ${session.id})
       RETURNING id`;
 
+    revalidatePath("/gallos");
+    revalidatePath("/");
     return NextResponse.json({ ok: true, id: rows[0].id });
   } catch (err) {
+    console.error("[/api/gallos POST]", err);
     const msg = err instanceof Error ? err.message : "Error desconocido";
     if (msg.includes("unique")) {
       return NextResponse.json({ error: "La placa o el candado ya existen" }, { status: 409 });
