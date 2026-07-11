@@ -53,6 +53,7 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
       </div>
 
       <ItemList
+        key={tab}
         items={current.items}
         apiPath={current.apiPath}
         placeholder={current.placeholder}

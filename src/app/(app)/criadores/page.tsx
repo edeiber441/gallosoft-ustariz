@@ -2,6 +2,8 @@ import { sql } from "@/lib/db";
 import ConfigManager from "@/components/ConfigManager";
 import type { Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 async function getCriadores(): Promise<Criador[]> {
   const { rows } = await sql`SELECT id, nombre, creado_en FROM criadores ORDER BY nombre ASC`;
   return rows as Criador[];
