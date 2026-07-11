@@ -18,6 +18,8 @@ type FormState = {
   criador_id: string;
   color: string;
   imagen: string | null;
+  libras: string;
+  onzas: string;
   cresta: string;
   patas: string;
   pico: string;
@@ -65,6 +67,8 @@ export default function GalloForm({ gallo }: Props) {
           criador_id: gallo.criador_id ? String(gallo.criador_id) : "",
           color: gallo.color,
           imagen: gallo.imagen,
+          libras: String(gallo.libras),
+          onzas: String(gallo.onzas),
           cresta: gallo.cresta || "",
           patas: gallo.patas || "",
           pico: gallo.pico || "",
@@ -76,6 +80,8 @@ export default function GalloForm({ gallo }: Props) {
           criador_id: "",
           color: "",
           imagen: null,
+          libras: "4",
+          onzas: "8",
           cresta: "",
           patas: "",
           pico: "",
@@ -169,6 +175,8 @@ export default function GalloForm({ gallo }: Props) {
           criador_id: form.criador_id ? parseInt(form.criador_id) : null,
           color: form.color.trim(),
           imagen: form.imagen,
+          libras: parseInt(form.libras),
+          onzas: parseInt(form.onzas),
           cresta: form.cresta.trim() || null,
           patas: form.patas.trim() || null,
           pico: form.pico.trim() || null,
@@ -378,6 +386,45 @@ export default function GalloForm({ gallo }: Props) {
             accept="image/*"
             onChange={handleImageChange}
             className="hidden"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Libras (1-6)</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={6}
+            value={form.libras}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "" || (/^\d+$/.test(v) && parseInt(v) >= 1 && parseInt(v) <= 6)) {
+                update("libras", v);
+              }
+            }}
+            className={inputClass}
+            placeholder="1-6"
+          />
+        </div>
+        <div>
+          <label className={labelClass}>Onzas (1-15)</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={15}
+            value={form.onzas}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "" || (/^\d+$/.test(v) && parseInt(v) >= 1 && parseInt(v) <= 15)) {
+                update("onzas", v);
+              }
+            }}
+            className={inputClass}
+            placeholder="1-15"
           />
         </div>
       </div>
