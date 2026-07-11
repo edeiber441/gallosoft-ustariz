@@ -29,8 +29,7 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleAdd() {
     const trimmed = nombre.trim();
     if (!trimmed) return;
     if (existingNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
@@ -75,8 +74,7 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
       </button>
 
       {open && (
-        <form
-          onSubmit={handleAdd}
+        <div
           className="absolute right-0 top-full mt-2 z-30 bg-surface border border-outline-variant rounded-lg p-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex flex-col gap-2 w-64"
         >
           <label className="font-mono text-xs text-on-surface-variant uppercase tracking-wider">
@@ -86,6 +84,7 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
             placeholder={`Ej: ${label}...`}
             autoFocus
             className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-on-background text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -96,7 +95,8 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
             </div>
           )}
           <button
-            type="submit"
+            type="button"
+            onClick={handleAdd}
             disabled={saving || !nombre.trim()}
             className="bg-primary text-on-primary-container rounded-lg px-3 py-2 font-headline font-semibold text-sm flex items-center justify-center gap-1 hover:brightness-110 transition-all disabled:opacity-50"
           >
@@ -111,7 +111,7 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
               </>
             )}
           </button>
-        </form>
+        </div>
       )}
     </div>
   );
