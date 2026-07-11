@@ -9,30 +9,37 @@ async function getSql(): Promise<SqlFn> {
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
   if (connectionString) {
-    const { Client } = await import("pg");
-    const client = new Client({
-      connectionString,
-      ssl: connectionString.includes("supabase") || connectionString.includes("vercel")
-        ? { rejectUnauthorized: false }
-        : undefined,
-      connectionTimeoutMillis: 15000,
-    });
-    await client.connect();
-    console.log("[db] Conectado a PostgreSQL remoto");
+    try {
+      const { Client } = await import("pg");
+      const client = new Client({
+        connectionString,
+        ssl: connectionString.includes("supabase") || connectionString.includes("vercel")
+          ? { rejectUnauthorized: false }
+          : undefined,
+        connectionTimeoutMillis: 15000,
+      });
+      await client.connect();
+      console.log("[db] Conectado a PostgreSQL remoto (Supabase)");
 
-    const pgSql: SqlFn = async (strings: TemplateStringsArray, ...values: unknown[]) => {
-      let query = "";
-      for (let i = 0; i < strings.length; i++) {
-        query += strings[i];
-        if (i < values.length) {
-          query += `$${i + 1}`;
+      const pgSql: SqlFn = async (strings: TemplateStringsArray, ...values: unknown[]) => {
+        let query = "";
+        for (let i = 0; i < strings.length; i++) {
+          query += strings[i];
+          if (i < values.length) {
+            query += `$${i + 1}`;
+          }
         }
-      }
-      const result = await client.query(query, values as unknown[]);
-      return { rows: result.rows as Record<string, unknown>[] };
-    };
-    _sql = pgSql;
-    return _sql;
+        const result = await client.query(query, values as unknown[]);
+        return { rows: result.rows as Record<string, unknown>[] };
+      };
+      _sql = pgSql;
+      return _sql;
+    } catch (err) {
+      console.error("[db] Error conectando a PostgreSQL:", err instanceof Error ? err.message : err);
+      console.warn("[db] Cayendo a pg-mem (datos de prueba)");
+    }
+  } else {
+    console.warn("[db] DATABASE_URL no encontrada. Usando pg-mem (datos de prueba)");
   }
 
   const { newDb } = await import("pg-mem");
