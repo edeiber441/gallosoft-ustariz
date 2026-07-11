@@ -6,7 +6,7 @@ type Props = {
   apiPath: string;
   label: string;
   existingNames: string[];
-  onCreated: (nombre: string) => void;
+  onCreated: (item: { id: number; nombre: string; creado_en?: string }) => void;
 };
 
 export default function InlineOptionAdd({ apiPath, label, existingNames, onCreated }: Props) {
@@ -49,7 +49,7 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
         setError(data.error || "Error al añadir");
         return;
       }
-      onCreated(trimmed);
+      onCreated({ id: data.id, nombre: data.nombre || trimmed });
       setNombre("");
       setOpen(false);
     } catch {

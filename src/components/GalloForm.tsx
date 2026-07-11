@@ -284,9 +284,9 @@ export default function GalloForm({ gallo }: Props) {
             apiPath="/api/criadores"
             label="criador"
             existingNames={criadores.map((c) => c.nombre)}
-            onCreated={(nombre) => {
-              setCriadores((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            onCreated={(item) => {
+              setCriadores((prev) => [...prev, { ...item, creado_en: "" }].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+              update("criador_id", String(item.id));
             }}
           />
         </div>
@@ -311,9 +311,9 @@ export default function GalloForm({ gallo }: Props) {
             apiPath="/api/colores"
             label="color"
             existingNames={colores.map((c) => c.nombre)}
-            onCreated={(nombre) => {
-              setColores((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            onCreated={(item) => {
+              setColores((prev) => [...prev, { ...item, creado_en: "" }].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+              update("color", item.nombre);
             }}
           />
         </div>
@@ -400,9 +400,9 @@ export default function GalloForm({ gallo }: Props) {
             apiPath="/api/crestas"
             label="cresta"
             existingNames={crestas.map((c) => c.nombre)}
-            onCreated={(nombre) => {
-              setCrestas((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            onCreated={(item) => {
+              setCrestas((prev) => [...prev, { ...item, creado_en: "" }].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+              update("cresta", item.nombre);
             }}
           />
         </div>
@@ -426,9 +426,9 @@ export default function GalloForm({ gallo }: Props) {
             apiPath="/api/patas"
             label="patas"
             existingNames={patasList.map((c) => c.nombre)}
-            onCreated={(nombre) => {
-              setPatasList((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            onCreated={(item) => {
+              setPatasList((prev) => [...prev, { ...item, creado_en: "" }].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+              update("patas", item.nombre);
             }}
           />
         </div>
@@ -452,9 +452,9 @@ export default function GalloForm({ gallo }: Props) {
             apiPath="/api/picos"
             label="pico"
             existingNames={picosList.map((c) => c.nombre)}
-            onCreated={(nombre) => {
-              setPicosList((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            onCreated={(item) => {
+              setPicosList((prev) => [...prev, { ...item, creado_en: "" }].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+              update("pico", item.nombre);
             }}
           />
         </div>
