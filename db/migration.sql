@@ -24,11 +24,32 @@ CREATE TABLE IF NOT EXISTS colores (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Tabla de crestas
+CREATE TABLE IF NOT EXISTS crestas (
+  id        SERIAL PRIMARY KEY,
+  nombre    TEXT NOT NULL UNIQUE,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Tabla de patas
+CREATE TABLE IF NOT EXISTS patas (
+  id        SERIAL PRIMARY KEY,
+  nombre    TEXT NOT NULL UNIQUE,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Tabla de picos
+CREATE TABLE IF NOT EXISTS picos (
+  id        SERIAL PRIMARY KEY,
+  nombre    TEXT NOT NULL UNIQUE,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Tabla de gallos
 CREATE TABLE IF NOT EXISTS gallos (
   id          SERIAL PRIMARY KEY,
-  placa       INTEGER NOT NULL UNIQUE,
-  candado     INTEGER NOT NULL UNIQUE,
+  placa       INTEGER UNIQUE,
+  candado     INTEGER UNIQUE,
   criador_id  INTEGER REFERENCES criadores(id) ON DELETE SET NULL,
   color       TEXT NOT NULL,
   imagen      TEXT,
@@ -40,6 +61,10 @@ CREATE TABLE IF NOT EXISTS gallos (
   creado_por  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Hacer placa y candado opcionales si las columnas ya existen con NOT NULL
+ALTER TABLE gallos ALTER COLUMN placa DROP NOT NULL;
+ALTER TABLE gallos ALTER COLUMN candado DROP NOT NULL;
 
 -- Índices para búsqueda por llave (placa y candado)
 CREATE INDEX IF NOT EXISTS idx_gallos_placa ON gallos (placa);
@@ -57,5 +82,15 @@ ON CONFLICT (username) DO NOTHING;
 -- Criadores de ejemplo
 INSERT INTO criadores (nombre) VALUES ('Ustariz') ON CONFLICT (nombre) DO NOTHING;
 
--- Colores de ejemplo
-INSERT INTO colores (nombre) VALUES ('Chino'), ('Giro'), ('Blanco Jabao'), ('Pinto'), ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao') ON CONFLICT (nombre) DO NOTHING;
+-- Colores de ejemplo (Blanco y Jabao por separado)
+DELETE FROM colores WHERE nombre = 'Blanco Jabao';
+INSERT INTO colores (nombre) VALUES ('Chino'), ('Giro'), ('Blanco'), ('Jabao'), ('Pinto'), ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao') ON CONFLICT (nombre) DO NOTHING;
+
+-- Crestas de ejemplo
+INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez') ON CONFLICT (nombre) DO NOTHING;
+
+-- Patas de ejemplo
+INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas') ON CONFLICT (nombre) DO NOTHING;
+
+-- Picos de ejemplo
+INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING;

@@ -94,10 +94,16 @@ export default async function GallosPage({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-headline font-semibold text-lg text-on-surface truncate group-hover:text-primary transition-colors">
-                  Placa {g.placa}
+                  {g.placa != null ? `Placa ${g.placa}` : g.candado != null ? `Candado ${g.candado}` : "Sin llave"}
                 </div>
                 <div className="font-mono text-xs text-on-surface-variant mt-1 truncate">
-                  Candado: {g.candado} • {g.criador_nombre || "Sin criador"} • {g.color}
+                  {g.placa != null && g.candado != null
+                    ? `Candado: ${g.candado}`
+                    : g.placa != null
+                      ? "Sin candado"
+                      : g.candado != null
+                        ? "Sin placa"
+                        : ""} • {g.criador_nombre || "Sin criador"} • {g.color}
                 </div>
               </div>
               <div className="flex flex-col items-end shrink-0">

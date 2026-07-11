@@ -31,7 +31,7 @@ export default async function EditarGalloPage({
   return (
     <>
       <h1 className="font-headline text-2xl font-bold text-on-background mb-2">
-        Editar gallo — Placa {gallo.placa}
+        Editar gallo — {gallo.placa != null ? `Placa ${gallo.placa}` : gallo.candado != null ? `Candado ${gallo.candado}` : "Sin llave"}
       </h1>
       <GalloForm gallo={gallo} />
     </>

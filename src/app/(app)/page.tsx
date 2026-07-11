@@ -6,18 +6,12 @@ async function getStats(): Promise<Stats> {
   const { rows: totalRows } = await sql`SELECT COUNT(*)::int AS total FROM gallos`;
   const total = totalRows[0].total as number;
 
-  const { rows: newRows } = await sql`SELECT COUNT(*)::int AS total FROM gallos WHERE creado_en >= now() - interval '30 days'`;
-  const nuevos = newRows[0].total as number;
-
-  const { rows: criadoresRows } = await sql`SELECT COUNT(*)::int AS total FROM criadores`;
-  const criadores = criadoresRows[0].total as number;
-
   const { rows: recientes } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
     g.criado_en, c.nombre AS criador_nombre
     FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
     ORDER BY g.criado_en DESC LIMIT 6`;
 
-  return { total, nuevos, criadores, recientes: recientes as unknown as Stats["recientes"] };
+  return { total, recientes: recientes as unknown as Stats["recientes"] };
 }
 
 function timeAgo(dateStr: string): string {
@@ -35,53 +29,31 @@ export default async function DashboardPage() {
   try {
     stats = await getStats();
   } catch {
-    stats = { total: 0, nuevos: 0, criadores: 0, recientes: [] };
+    stats = { total: 0, recientes: [] };
   }
 
   return (
     <>
-      <section className="grid grid-cols-2 gap-2">
-        <div className="col-span-2 bg-surface rounded-xl p-6 gold-edge shadow-[0_4px_16px_rgba(0,0,0,0.6)] relative overflow-hidden min-h-[160px] flex flex-col justify-between">
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
-          <div className="relative z-10 flex justify-between items-start">
-            <span className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
-              Total Gallos
-            </span>
-            <span className="material-symbols-outlined text-primary">analytics</span>
-          </div>
-          <div className="relative z-10 mt-auto pt-4">
-            <div className="font-headline text-5xl font-extrabold text-primary tracking-tight">
-              {stats.total.toLocaleString("es")}
-            </div>
-            <div className="text-base text-on-surface flex items-center gap-1 mt-1">
-              <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
-              Roster activo
-            </div>
-          </div>
+      <section className="bg-surface rounded-xl p-6 gold-edge shadow-[0_4px_16px_rgba(0,0,0,0.6)] relative overflow-hidden min-h-[140px] flex flex-col justify-between">
+        <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="relative z-10 flex justify-between items-start">
+          <span className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
+            Total Gallos
+          </span>
+          <span className="material-symbols-outlined text-primary">analytics</span>
         </div>
-
-        <div className="col-span-1 bg-surface rounded-xl p-3 border border-surface-variant min-h-[160px] flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.5)]" >
-          <span className="font-mono text-xs text-outline uppercase tracking-wider">Criadores</span>
-          <div className="mt-auto">
-            <div className="font-headline text-2xl font-bold text-on-background">
-              {stats.criadores}
-            </div>
-            <div className="font-mono text-xs text-on-surface-variant mt-1">Activos</div>
+        <div className="relative z-10 mt-auto pt-4">
+          <div className="font-headline text-5xl font-extrabold text-primary tracking-tight">
+            {stats.total.toLocaleString("es")}
           </div>
-        </div>
-
-        <div className="col-span-1 bg-surface rounded-xl p-3 border border-surface-variant min-h-[160px] flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-          <span className="font-mono text-xs text-outline uppercase tracking-wider">Nuevos (30 días)</span>
-          <div className="mt-auto">
-            <div className="font-headline text-2xl font-bold text-primary">
-              +{stats.nuevos}
-            </div>
-            <div className="font-mono text-xs text-on-surface-variant mt-1">Registros</div>
+          <div className="text-base text-on-surface flex items-center gap-1 mt-1">
+            <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
+            Roster activo
           </div>
         </div>
       </section>
 
-      <section className="w-full overflow-hidden">
+      <section className="w-full mt-2">
         <div className="flex gap-3 overflow-x-auto snap-x hide-scrollbar pb-1">
           <Link
             href="/gallos"
@@ -138,10 +110,10 @@ export default async function DashboardPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-headline font-semibold text-lg text-on-surface truncate group-hover:text-primary transition-colors">
-                  Placa {g.placa}
+                  {g.placa != null ? `Placa ${g.placa}` : g.candado != null ? `Candado ${g.candado}` : "Sin llave"}
                 </div>
                 <div className="font-mono text-xs text-on-surface-variant mt-1 truncate">
-                  Candado: {g.candado} • {g.criador_nombre || "Sin criador"} • {g.color}
+                  {g.criador_nombre || "Sin criador"} • {g.color}
                 </div>
               </div>
               <div className="flex flex-col items-end shrink-0">

@@ -46,8 +46,8 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
 
     await sql`
       UPDATE gallos SET
-        placa = ${parseInt(placa)},
-        candado = ${parseInt(candado)},
+        placa = ${placa ? parseInt(placa) : null},
+        candado = ${candado ? parseInt(candado) : null},
         criador_id = ${criador_id ? parseInt(criador_id) : null},
         color = ${color},
         imagen = ${imagen || null},

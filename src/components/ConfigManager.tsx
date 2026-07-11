@@ -1,58 +1,64 @@
 "use client";
 
 import { useState } from "react";
-import type { Criador, Color } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
 
 type Props = {
   initialCriadores: Criador[];
   initialColores: Color[];
+  initialCrestas: Cresta[];
+  initialPatas: Pata[];
+  initialPicos: Pico[];
 };
 
-export default function ConfigManager({ initialCriadores, initialColores }: Props) {
-  const [tab, setTab] = useState<"criadores" | "colores">("criadores");
+type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos";
+
+export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos }: Props) {
+  const [tab, setTab] = useState<TabKey>("criadores");
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "criadores", label: "Criadores" },
+    { key: "colores", label: "Colores" },
+    { key: "crestas", label: "Crestas" },
+    { key: "patas", label: "Patas" },
+    { key: "picos", label: "Picos" },
+  ];
+
+  const config: Record<TabKey, { items: { id: number; nombre: string }[]; apiPath: string; placeholder: string; emptyText: string; addError: string }> = {
+    criadores: { items: initialCriadores, apiPath: "/api/criadores", placeholder: "Nombre del criador", emptyText: "No hay criadores registrados.", addError: "El criador ya existe" },
+    colores: { items: initialColores, apiPath: "/api/colores", placeholder: "Nombre del color", emptyText: "No hay colores registrados.", addError: "El color ya existe" },
+    crestas: { items: initialCrestas, apiPath: "/api/crestas", placeholder: "Nombre de la cresta", emptyText: "No hay crestas registradas.", addError: "La cresta ya existe" },
+    patas: { items: initialPatas, apiPath: "/api/patas", placeholder: "Tipo de patas", emptyText: "No hay patas registradas.", addError: "Las patas ya existen" },
+    picos: { items: initialPicos, apiPath: "/api/picos", placeholder: "Tipo de pico", emptyText: "No hay picos registrados.", addError: "El pico ya existe" },
+  };
+
+  const current = config[tab];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2">
-        <button
-          onClick={() => setTab("criadores")}
-          className={`flex-1 rounded-lg px-4 py-2.5 font-headline font-semibold text-sm transition-colors ${
-            tab === "criadores"
-              ? "bg-primary text-on-primary-container"
-              : "bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high"
-          }`}
-        >
-          Criadores
-        </button>
-        <button
-          onClick={() => setTab("colores")}
-          className={`flex-1 rounded-lg px-4 py-2.5 font-headline font-semibold text-sm transition-colors ${
-            tab === "colores"
-              ? "bg-primary text-on-primary-container"
-              : "bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high"
-          }`}
-        >
-          Colores
-        </button>
+      <div className="grid grid-cols-5 gap-1.5">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`rounded-lg px-2 py-2.5 font-headline font-semibold text-xs sm:text-sm transition-colors ${
+              tab === t.key
+                ? "bg-primary text-on-primary-container"
+                : "bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {tab === "criadores" ? (
-        <ItemList
-          items={initialCriadores}
-          apiPath="/api/criadores"
-          placeholder="Nombre del criador"
-          emptyText="No hay criadores registrados."
-         addError="El criador ya existe"
-        />
-      ) : (
-        <ItemList
-          items={initialColores}
-          apiPath="/api/colores"
-          placeholder="Nombre del color"
-          emptyText="No hay colores registrados."
-          addError="El color ya existe"
-        />
-      )}
+      <ItemList
+        items={current.items}
+        apiPath={current.apiPath}
+        placeholder={current.placeholder}
+        emptyText={current.emptyText}
+        addError={current.addError}
+      />
     </div>
   );
 }
@@ -93,7 +99,7 @@ function ItemList({
         setError(data.error || addError);
         return;
       }
-      setItems([...items, data]);
+      setItems([...items, data].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       setNombre("");
     } catch {
       setError("Error de conexión");
@@ -109,7 +115,7 @@ function ItemList({
         body: JSON.stringify({ nombre: newName.trim() }),
       });
       if (res.ok) {
-        setItems(items.map((c) => (c.id === id ? { ...c, nombre: newName.trim() } : c)));
+        setItems(items.map((c) => (c.id === id ? { ...c, nombre: newName.trim() } : c)).sort((a, b) => a.nombre.localeCompare(b.nombre)));
         setEditing(null);
       }
     } catch {}

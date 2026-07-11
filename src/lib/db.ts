@@ -57,10 +57,25 @@ async function getSql(): Promise<SqlFn> {
       nombre TEXT NOT NULL UNIQUE,
       creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    CREATE TABLE crestas (
+      id SERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL UNIQUE,
+      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE patas (
+      id SERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL UNIQUE,
+      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE picos (
+      id SERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL UNIQUE,
+      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
     CREATE TABLE gallos (
       id SERIAL PRIMARY KEY,
-      placa INTEGER NOT NULL UNIQUE,
-      candado INTEGER NOT NULL UNIQUE,
+      placa INTEGER UNIQUE,
+      candado INTEGER UNIQUE,
       criador_id INTEGER REFERENCES criadores(id) ON DELETE SET NULL,
       color TEXT NOT NULL,
       imagen TEXT,
@@ -85,7 +100,19 @@ async function getSql(): Promise<SqlFn> {
   );
 
   db.public.many(
-    `INSERT INTO colores (nombre) VALUES ('Chino'), ('Giro'), ('Blanco Jabao'), ('Pinto'), ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao') RETURNING id, nombre`
+    `INSERT INTO colores (nombre) VALUES ('Chino'), ('Giro'), ('Blanco'), ('Jabao'), ('Pinto'), ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao') RETURNING id, nombre`
+  );
+
+  db.public.many(
+    `INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez') ON CONFLICT (nombre) DO NOTHING RETURNING id, nombre`
+  );
+
+  db.public.many(
+    `INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas') ON CONFLICT (nombre) DO NOTHING RETURNING id, nombre`
+  );
+
+  db.public.many(
+    `INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING RETURNING id, nombre`
   );
 
   const gallosSeed = [

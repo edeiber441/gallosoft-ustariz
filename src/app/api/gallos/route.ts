@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { placa, candado, criador_id, color, imagen, libras, onzas, cresta, patas, pico } = body;
 
-    if (!placa || !candado || !color) {
-      return NextResponse.json({ error: "Placa, candado y color son obligatorios" }, { status: 400 });
+if (!color || (!placa && !candado)) {
+      return NextResponse.json({ error: "Debes registrar al menos placa o candado, y el color es obligatorio" }, { status: 400 });
     }
 
     const librasNum = parseInt(libras);
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     const { rows } = await sql`
       INSERT INTO gallos (placa, candado, criador_id, color, imagen, libras, onzas, cresta, patas, pico, creado_por)
-      VALUES (${parseInt(placa)}, ${parseInt(candado)}, ${criador_id ? parseInt(criador_id) : null},
+      VALUES (${placa ? parseInt(placa) : null}, ${candado ? parseInt(candado) : null}, ${criador_id ? parseInt(criador_id) : null},
         ${color}, ${imagen || null}, ${librasNum}, ${onzasNum},
         ${cresta || null}, ${patas || null}, ${pico || null}, ${session.id})
       RETURNING id`;

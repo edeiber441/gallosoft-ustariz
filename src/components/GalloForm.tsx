@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { Gallo, Criador, Color } from "@/lib/types";
+import type { Gallo, Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
+import InlineOptionAdd from "@/components/InlineOptionAdd";
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
@@ -11,29 +12,15 @@ type Props = {
 };
 
 type FormState = {
+  tipoId: "placa" | "candado";
   placa: string;
   candado: string;
   criador_id: string;
   color: string;
   imagen: string | null;
-  libras: string;
-  onzas: string;
   cresta: string;
   patas: string;
   pico: string;
-};
-
-const EMPTY: FormState = {
-  placa: "",
-  candado: "",
-  criador_id: "",
-  color: "",
-  imagen: null,
-  libras: "4",
-  onzas: "8",
-  cresta: "",
-  patas: "",
-  pico: "",
 };
 
 async function compressImage(file: File, maxSize: number = 1024, quality: number = 0.8): Promise<string> {
@@ -43,7 +30,7 @@ async function compressImage(file: File, maxSize: number = 1024, quality: number
       const img = new Image();
       img.onload = () => {
         let { width, height } = img;
-        if (width > maxSize || height > maxSize) {
+        if (width > maxSize || height > height) {
           if (width > height) {
             height = Math.round((height * maxSize) / width);
             width = maxSize;
@@ -72,21 +59,33 @@ export default function GalloForm({ gallo }: Props) {
   const [form, setForm] = useState<FormState>(() =>
     gallo
       ? {
-          placa: String(gallo.placa),
-          candado: String(gallo.candado),
+          tipoId: gallo.placa != null ? "placa" : gallo.candado != null ? "candado" : "placa",
+          placa: gallo.placa != null ? String(gallo.placa) : "",
+          candado: gallo.candado != null ? String(gallo.candado) : "",
           criador_id: gallo.criador_id ? String(gallo.criador_id) : "",
           color: gallo.color,
           imagen: gallo.imagen,
-          libras: String(gallo.libras),
-          onzas: String(gallo.onzas),
           cresta: gallo.cresta || "",
           patas: gallo.patas || "",
           pico: gallo.pico || "",
         }
-      : EMPTY
+      : {
+          tipoId: "placa",
+          placa: "",
+          candado: "",
+          criador_id: "",
+          color: "",
+          imagen: null,
+          cresta: "",
+          patas: "",
+          pico: "",
+        }
   );
   const [criadores, setCriadores] = useState<Criador[]>([]);
   const [colores, setColores] = useState<Color[]>([]);
+  const [crestas, setCrestas] = useState<Cresta[]>([]);
+  const [patasList, setPatasList] = useState<Pata[]>([]);
+  const [picosList, setPicosList] = useState<Pico[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -97,19 +96,25 @@ export default function GalloForm({ gallo }: Props) {
     let cancelled = false;
     fetch("/api/criadores")
       .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && Array.isArray(data)) setCriadores(data);
-      })
+      .then((data) => { if (!cancelled && Array.isArray(data)) setCriadores(data); })
       .catch(() => {});
     fetch("/api/colores")
       .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && Array.isArray(data)) setColores(data);
-      })
+      .then((data) => { if (!cancelled && Array.isArray(data)) setColores(data); })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    fetch("/api/crestas")
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled && Array.isArray(data)) setCrestas(data); })
+      .catch(() => {});
+    fetch("/api/patas")
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled && Array.isArray(data)) setPatasList(data); })
+      .catch(() => {});
+    fetch("/api/picos")
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled && Array.isArray(data)) setPicosList(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -119,12 +124,10 @@ export default function GalloForm({ gallo }: Props) {
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > MAX_IMAGE_BYTES) {
       setError("La imagen supera los 20MB. Selecciona una más pequeña.");
       return;
     }
-
     setImageProcessing(true);
     setError("");
     try {
@@ -142,13 +145,9 @@ export default function GalloForm({ gallo }: Props) {
     setError("");
     setSaving(true);
 
-    if (!form.placa || !form.candado) {
-      setError("Placa y candado son obligatorios");
-      setSaving(false);
-      return;
-    }
-    if (!/^\d+$/.test(form.placa) || !/^\d+$/.test(form.candado)) {
-      setError("Placa y candado deben ser solo números");
+    const idValue = form.tipoId === "placa" ? form.placa : form.candado;
+    if (!idValue || !/^\d+$/.test(idValue)) {
+      setError(`${form.tipoId === "placa" ? "Placa" : "Candado"} es obligatorio y debe ser solo números`);
       setSaving(false);
       return;
     }
@@ -165,13 +164,11 @@ export default function GalloForm({ gallo }: Props) {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          placa: parseInt(form.placa),
-          candado: parseInt(form.candado),
+          placa: form.tipoId === "placa" ? parseInt(form.placa) : null,
+          candado: form.tipoId === "candado" ? parseInt(form.candado) : null,
           criador_id: form.criador_id ? parseInt(form.criador_id) : null,
           color: form.color.trim(),
           imagen: form.imagen,
-          libras: parseInt(form.libras),
-          onzas: parseInt(form.onzas),
           cresta: form.cresta.trim() || null,
           patas: form.patas.trim() || null,
           pico: form.pico.trim() || null,
@@ -179,7 +176,6 @@ export default function GalloForm({ gallo }: Props) {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error || "Error al guardar");
         return;
@@ -197,7 +193,6 @@ export default function GalloForm({ gallo }: Props) {
   async function handleDelete() {
     if (!gallo) return;
     if (!confirm("¿Eliminar este gallo? Esta acción no se puede deshacer.")) return;
-
     setSaving(true);
     try {
       await fetch(`/api/gallos/${gallo.id}`, { method: "DELETE" });
@@ -211,8 +206,13 @@ export default function GalloForm({ gallo }: Props) {
 
   const inputClass =
     "w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 text-on-background text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
+  const selectWrapClass = "flex gap-2";
+  const selectClass =
+    "flex-1 bg-surface border border-outline-variant rounded-lg px-4 py-3 text-on-background text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none";
   const labelClass =
     "font-mono text-xs text-on-surface-variant uppercase tracking-wider mb-1 block";
+  const segActive = "bg-primary text-on-primary-container border-primary";
+  const segInactive = "bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -222,9 +222,26 @@ export default function GalloForm({ gallo }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelClass}>Placa *</label>
+      {/* Selector placa / candado + input */}
+      <div>
+        <label className={labelClass}>Tipo de llave *</label>
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => update("tipoId", "placa")}
+            className={`flex-1 rounded-lg px-4 py-2.5 font-headline font-semibold text-sm transition-colors ${form.tipoId === "placa" ? segActive : segInactive}`}
+          >
+            Placa
+          </button>
+          <button
+            type="button"
+            onClick={() => update("tipoId", "candado")}
+            className={`flex-1 rounded-lg px-4 py-2.5 font-headline font-semibold text-sm transition-colors ${form.tipoId === "candado" ? segActive : segInactive}`}
+          >
+            Candado
+          </button>
+        </div>
+        {form.tipoId === "placa" ? (
           <input
             type="number"
             inputMode="numeric"
@@ -235,9 +252,7 @@ export default function GalloForm({ gallo }: Props) {
             className={inputClass}
             placeholder="Ej: 100"
           />
-        </div>
-        <div>
-          <label className={labelClass}>Candado *</label>
+        ) : (
           <input
             type="number"
             inputMode="numeric"
@@ -248,42 +263,63 @@ export default function GalloForm({ gallo }: Props) {
             className={inputClass}
             placeholder="Ej: 50"
           />
+        )}
+      </div>
+
+      {/* Criador */}
+      <div>
+        <label className={labelClass}>Criador</label>
+        <div className={selectWrapClass}>
+          <select
+            value={form.criador_id}
+            onChange={(e) => update("criador_id", e.target.value)}
+            className={selectClass}
+          >
+            <option value="">Seleccionar criador...</option>
+            {criadores.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/criadores"
+            label="criador"
+            existingNames={criadores.map((c) => c.nombre)}
+            onCreated={(nombre) => {
+              setCriadores((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            }}
+          />
         </div>
       </div>
 
-      <div>
-        <label className={labelClass}>Criador</label>
-        <select
-          value={form.criador_id}
-          onChange={(e) => update("criador_id", e.target.value)}
-          className={inputClass}
-        >
-          <option value="">Seleccionar criador...</option>
-          {criadores.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-
+      {/* Color */}
       <div>
         <label className={labelClass}>Color *</label>
-        <select
-          value={form.color}
-          onChange={(e) => update("color", e.target.value)}
-          required
-          className={inputClass}
-        >
-          <option value="">Seleccionar color...</option>
-          {colores.map((c) => (
-            <option key={c.id} value={c.nombre}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+        <div className={selectWrapClass}>
+          <select
+            value={form.color}
+            onChange={(e) => update("color", e.target.value)}
+            required
+            className={selectClass}
+          >
+            <option value="">Seleccionar color...</option>
+            {colores.map((c) => (
+              <option key={c.id} value={c.nombre}>{c.nombre}</option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/colores"
+            label="color"
+            existingNames={colores.map((c) => c.nombre)}
+            onCreated={(nombre) => {
+              setColores((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            }}
+          />
+        </div>
       </div>
 
+      {/* Imagen */}
       <div>
         <label className={labelClass}>Imagen del gallo (máx. 20MB)</label>
         <div className="flex flex-col items-center gap-3">
@@ -346,78 +382,85 @@ export default function GalloForm({ gallo }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelClass}>Libras (1-6)</label>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={6}
-            value={form.libras}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === "" || (/^\d+$/.test(v) && parseInt(v) >= 1 && parseInt(v) <= 6)) {
-                update("libras", v);
-              }
-            }}
-            className={inputClass}
-            placeholder="1-6"
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Onzas (1-15)</label>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={15}
-            value={form.onzas}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === "" || (/^\d+$/.test(v) && parseInt(v) >= 1 && parseInt(v) <= 15)) {
-                update("onzas", v);
-              }
-            }}
-            className={inputClass}
-            placeholder="1-15"
-          />
-        </div>
-      </div>
-
+      {/* Cresta */}
       <div>
         <label className={labelClass}>Cresta (opcional)</label>
-        <input
-          type="text"
-          value={form.cresta}
-          onChange={(e) => update("cresta", e.target.value)}
-          className={inputClass}
-          placeholder="Ej: Simple, nuez..."
-        />
+        <div className={selectWrapClass}>
+          <select
+            value={form.cresta}
+            onChange={(e) => update("cresta", e.target.value)}
+            className={selectClass}
+          >
+            <option value="">Seleccionar cresta...</option>
+            {crestas.map((c) => (
+              <option key={c.id} value={c.nombre}>{c.nombre}</option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/crestas"
+            label="cresta"
+            existingNames={crestas.map((c) => c.nombre)}
+            onCreated={(nombre) => {
+              setCrestas((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            }}
+          />
+        </div>
       </div>
 
+      {/* Patas */}
       <div>
         <label className={labelClass}>Patas (opcional)</label>
-        <input
-          type="text"
-          value={form.patas}
-          onChange={(e) => update("patas", e.target.value)}
-          className={inputClass}
-          placeholder="Ej: Verdes, amarillas..."
-        />
+        <div className={selectWrapClass}>
+          <select
+            value={form.patas}
+            onChange={(e) => update("patas", e.target.value)}
+            className={selectClass}
+          >
+            <option value="">Seleccionar patas...</option>
+            {patasList.map((c) => (
+              <option key={c.id} value={c.nombre}>{c.nombre}</option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/patas"
+            label="patas"
+            existingNames={patasList.map((c) => c.nombre)}
+            onCreated={(nombre) => {
+              setPatasList((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            }}
+          />
+        </div>
       </div>
 
+      {/* Pico */}
       <div>
         <label className={labelClass}>Pico (opcional)</label>
-        <input
-          type="text"
-          value={form.pico}
-          onChange={(e) => update("pico", e.target.value)}
-          className={inputClass}
-          placeholder="Ej: Curvo corto..."
-        />
+        <div className={selectWrapClass}>
+          <select
+            value={form.pico}
+            onChange={(e) => update("pico", e.target.value)}
+            className={selectClass}
+          >
+            <option value="">Seleccionar pico...</option>
+            {picosList.map((c) => (
+              <option key={c.id} value={c.nombre}>{c.nombre}</option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/picos"
+            label="pico"
+            existingNames={picosList.map((c) => c.nombre)}
+            onCreated={(nombre) => {
+              setPicosList((prev) => [...prev, { id: -Math.floor(Math.random() * 100000), nombre, creado_en: "" }]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            }}
+          />
+        </div>
       </div>
 
+      {/* Submit */}
       <div className="flex gap-3 mt-3">
         <button
           type="submit"

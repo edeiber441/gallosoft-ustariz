@@ -1,7 +1,7 @@
 export type Gallo = {
   id: number;
-  placa: number;
-  candado: number;
+  placa: number | null;
+  candado: number | null;
   color: string;
   imagen: string | null;
   libras: number;
@@ -26,14 +26,30 @@ export type Color = {
   creado_en: string;
 };
 
+export type Cresta = {
+  id: number;
+  nombre: string;
+  creado_en: string;
+};
+
+export type Pata = {
+  id: number;
+  nombre: string;
+  creado_en: string;
+};
+
+export type Pico = {
+  id: number;
+  nombre: string;
+  creado_en: string;
+};
+
 export type Stats = {
   total: number;
-  nuevos: number;
-  criadores: number;
   recientes: Array<{
     id: number;
-    placa: number;
-    candado: number;
+    placa: number | null;
+    candado: number | null;
     color: string;
     imagen: string | null;
     libras: number;
