@@ -45,6 +45,7 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
         body: JSON.stringify({ nombre: trimmed }),
       });
       const data = await res.json();
+      console.log("[InlineOptionAdd] POST", apiPath, "->", res.status, data);
       if (!res.ok) {
         setError(data.error || "Error al añadir");
         return;
@@ -52,7 +53,8 @@ export default function InlineOptionAdd({ apiPath, label, existingNames, onCreat
       onCreated({ id: data.id, nombre: data.nombre || trimmed });
       setNombre("");
       setOpen(false);
-    } catch {
+    } catch (err) {
+      console.error("[InlineOptionAdd] POST falló:", err);
       setError("Error de conexión");
     } finally {
       setSaving(false);

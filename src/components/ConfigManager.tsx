@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
 
 type Props = {
@@ -53,7 +53,6 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
       </div>
 
       <ItemList
-        key={tab}
         items={current.items}
         apiPath={current.apiPath}
         placeholder={current.placeholder}
@@ -83,11 +82,22 @@ function ItemList({
   const [nombre, setNombre] = useState("");
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<{ id: number; nombre: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(apiPath)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && Array.isArray(d)) setItems(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [apiPath]);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!nombre.trim()) return;
     setError("");
+    setBusy(true);
 
     try {
       const res = await fetch(apiPath, {
@@ -96,14 +106,19 @@ function ItemList({
         body: JSON.stringify({ nombre: nombre.trim() }),
       });
       const data = await res.json();
+      console.log("[ConfigManager] POST", apiPath, "->", res.status, data);
       if (!res.ok) {
         setError(data.error || addError);
+        setBusy(false);
         return;
       }
-      setItems([...items, data].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+      setItems((prev) => [...prev, data].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       setNombre("");
-    } catch {
+    } catch (err) {
+      console.error("[ConfigManager] POST falló:", err);
       setError("Error de conexión");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -124,10 +139,15 @@ function ItemList({
 
   async function handleDelete(id: number) {
     if (!confirm("¿Eliminar?")) return;
+    if (busy) return;
+    setBusy(true);
     try {
       await fetch(`${apiPath}/${id}`, { method: "DELETE" });
       setItems(items.filter((c) => c.id !== id));
     } catch {}
+    finally {
+      setBusy(false);
+    }
   }
 
   const inputClass =
