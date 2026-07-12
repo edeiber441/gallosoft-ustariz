@@ -9,9 +9,9 @@ async function getStats(): Promise<Stats> {
   const total = totalRows[0].total as number;
 
   const { rows: recientes } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-    g.criado_en, c.nombre AS criador_nombre
+    g.creado_en, c.nombre AS criador_nombre
     FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-    ORDER BY g.criado_en DESC LIMIT 6`;
+    ORDER BY g.creado_en DESC LIMIT 6`;
 
   return { total, recientes: recientes as unknown as Stats["recientes"] };
 }
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
                   </span>
                 </div>
                 <span className="font-mono text-xs text-outline" style={{ fontSize: "10px" }}>
-                  {timeAgo(g.criado_en)}
+                  {timeAgo(g.creado_en)}
                 </span>
               </div>
             </Link>

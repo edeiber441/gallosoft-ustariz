@@ -1,7 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { sql } from "@/lib/db";
+import { sql, type GalloRow } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+
+type GalloBody = {
+  placa?: number | string | null;
+  candado?: number | string | null;
+  criador_id?: number | string | null;
+  color?: string | null;
+  imagen?: string | null;
+  libras?: number | string | null;
+  onzas?: number | string | null;
+  cresta?: string | null;
+  patas?: string | null;
+  pico?: string | null;
+};
+
+function toIntOrNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
+  if (typeof v === "string") {
+    const trimmed = v.trim();
+    if (!trimmed) return null;
+    const n = Number(trimmed);
+    if (Number.isFinite(n)) return Math.trunc(n);
+  }
+  return null;
+}
+
+function toTrimmedString(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return t.length > 0 ? t : null;
+}
+
+function isValidImageDataUrl(v: string): boolean {
+  if (v.length > 5 * 1024 * 1024) return false;
+  return /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
+}
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -10,41 +49,57 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const placa = searchParams.get("placa");
-  const candado = searchParams.get("candado");
-  const criador = searchParams.get("criador");
+  const placa = toIntOrNull(searchParams.get("placa"));
+  const candado = toIntOrNull(searchParams.get("candado"));
+  const criador = toTrimmedString(searchParams.get("criador"));
+  const criadorId = toIntOrNull(searchParams.get("criador_id"));
 
-  if (placa) {
-    const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
-      c.id AS criador_id, c.nombre AS criador_nombre
+  if (placa !== null) {
+    const { rows } = await sql<GalloRow>`
+      SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+        g.cresta, g.patas, g.pico, g.creado_en,
+        c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-      WHERE g.placa = ${parseInt(placa)} ORDER BY g.criado_en DESC`;
+      WHERE g.placa = ${placa} ORDER BY g.creado_en DESC NULLS LAST`;
     return NextResponse.json(rows);
   }
 
-  if (candado) {
-    const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
-      c.id AS criador_id, c.nombre AS criador_nombre
+  if (candado !== null) {
+    const { rows } = await sql<GalloRow>`
+      SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+        g.cresta, g.patas, g.pico, g.creado_en,
+        c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-      WHERE g.candado = ${parseInt(candado)} ORDER BY g.criado_en DESC`;
+      WHERE g.candado = ${candado} ORDER BY g.creado_en DESC`;
+    return NextResponse.json(rows);
+  }
+
+  if (criadorId !== null) {
+    const { rows } = await sql<GalloRow>`
+      SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+        g.cresta, g.patas, g.pico, g.creado_en,
+        c.id AS criador_id, c.nombre AS criador_nombre
+      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
+      WHERE g.criador_id = ${criadorId} ORDER BY g.creado_en DESC`;
     return NextResponse.json(rows);
   }
 
   if (criador) {
-    const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
-      c.id AS criador_id, c.nombre AS criador_nombre
+    const { rows } = await sql<GalloRow>`
+      SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+        g.cresta, g.patas, g.pico, g.creado_en,
+        c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-      WHERE c.nombre ILIKE ${"%" + criador + "%"} ORDER BY g.criado_en DESC`;
+      WHERE c.nombre ILIKE ${"%" + criador + "%"} ORDER BY g.creado_en DESC`;
     return NextResponse.json(rows);
   }
 
-  const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-    g.cresta, g.patas, g.pico, g.criado_en,
-    c.id AS criador_id, c.nombre AS criador_nombre
-    FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id ORDER BY g.criado_en DESC`;
+  const { rows } = await sql<GalloRow>`
+    SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+      g.cresta, g.patas, g.pico, g.creado_en,
+      c.id AS criador_id, c.nombre AS criador_nombre
+    FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
+    ORDER BY g.creado_en DESC`;
   return NextResponse.json(rows);
 }
 
@@ -54,41 +109,95 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  let body: GalloBody;
   try {
-    const body = await request.json();
-    const { placa, candado, criador_id, color, imagen, libras, onzas, cresta, patas, pico } = body;
+    body = (await request.json()) as GalloBody;
+  } catch {
+    return NextResponse.json({ error: "Cuerpo de la petición inválido" }, { status: 400 });
+  }
 
-    if (!color || (!placa && !candado)) {
-      return NextResponse.json({ error: "Debes registrar al menos placa o candado, y el color es obligatorio" }, { status: 400 });
+  const placaVal = toIntOrNull(body.placa);
+  const candadoVal = toIntOrNull(body.candado);
+  const criadorIdVal = toIntOrNull(body.criador_id);
+  const color = toTrimmedString(body.color);
+  const cresta = toTrimmedString(body.cresta);
+  const patas = toTrimmedString(body.patas);
+  const pico = toTrimmedString(body.pico);
+
+  if (placaVal === null && candadoVal === null) {
+    return NextResponse.json(
+      { error: "Debes registrar al menos una placa o un candado" },
+      { status: 400 }
+    );
+  }
+  if (!color) {
+    return NextResponse.json({ error: "El color es obligatorio" }, { status: 400 });
+  }
+  if (color.length > 80) {
+    return NextResponse.json({ error: "El color es demasiado largo" }, { status: 400 });
+  }
+
+  const librasNum = toIntOrNull(body.libras);
+  const onzasNum = toIntOrNull(body.onzas);
+  if (librasNum === null || librasNum < 1 || librasNum > 6) {
+    return NextResponse.json({ error: "Las libras deben estar entre 1 y 6" }, { status: 400 });
+  }
+  if (onzasNum === null || onzasNum < 1 || onzasNum > 15) {
+    return NextResponse.json({ error: "Las onzas deben estar entre 1 y 15" }, { status: 400 });
+  }
+
+  const imagenRaw = body.imagen;
+  let imagen: string | null = null;
+  if (typeof imagenRaw === "string" && imagenRaw.length > 0) {
+    if (!isValidImageDataUrl(imagenRaw)) {
+      return NextResponse.json(
+        { error: "La imagen debe ser un data URL JPEG/PNG/WebP válido (máx. 5MB)" },
+        { status: 400 }
+      );
     }
+    imagen = imagenRaw;
+  }
 
-    const librasNum = Number(libras);
-    const onzasNum = Number(onzas);
-    if (!Number.isFinite(librasNum) || librasNum < 1 || librasNum > 6) {
-      return NextResponse.json({ error: "Libras debe estar entre 1 y 6" }, { status: 400 });
-    }
-    if (!Number.isFinite(onzasNum) || onzasNum < 1 || onzasNum > 15) {
-      return NextResponse.json({ error: "Onzas debe estar entre 1 y 15" }, { status: 400 });
-    }
-
-    const placaVal = placa != null && placa !== "" ? parseInt(placa) : null;
-    const candadoVal = candado != null && candado !== "" ? parseInt(candado) : null;
-
-    const { rows } = await sql`
-      INSERT INTO gallos (placa, candado, criador_id, color, imagen, libras, onzas, cresta, patas, pico, creado_por)
-      VALUES (${placaVal}, ${candadoVal}, ${criador_id ? parseInt(criador_id) : null},
-        ${color}, ${imagen || null}, ${librasNum}, ${onzasNum},
-        ${cresta || null}, ${patas || null}, ${pico || null}, ${session.id})
-      RETURNING id`;
+  try {
+    const { rows } = await sql<GalloRow>`
+      INSERT INTO gallos (
+        placa, candado, criador_id, color, imagen,
+        libras, onzas, cresta, patas, pico, creado_por
+      )
+      VALUES (
+        ${placaVal}, ${candadoVal}, ${criadorIdVal}, ${color}, ${imagen},
+        ${librasNum}, ${onzasNum}, ${cresta}, ${patas}, ${pico}, ${session.id}
+      )
+      RETURNING id, placa, candado, color, libras, onzas
+    `;
 
     revalidatePath("/gallos");
     revalidatePath("/");
-    return NextResponse.json({ ok: true, id: rows[0].id });
+    return NextResponse.json({ ok: true, gallo: rows[0] }, { status: 201 });
   } catch (err) {
     console.error("[/api/gallos POST]", err);
     const msg = err instanceof Error ? err.message : "Error desconocido";
-    if (msg.includes("unique")) {
-      return NextResponse.json({ error: "La placa o el candado ya existen" }, { status: 409 });
+
+    if (msg.includes("gallos_placa_key") || msg.includes("gallos_candado_key")) {
+      return NextResponse.json(
+        { error: "Ya existe un gallo con esa placa o candado" },
+        { status: 409 }
+      );
+    }
+    if (msg.includes("gallos_llave_presente")) {
+      return NextResponse.json(
+        { error: "Debes registrar al menos una placa o un candado" },
+        { status: 400 }
+      );
+    }
+    if (msg.includes("gallos_libras_check")) {
+      return NextResponse.json({ error: "Las libras deben estar entre 1 y 6" }, { status: 400 });
+    }
+    if (msg.includes("gallos_onzas_check")) {
+      return NextResponse.json({ error: "Las onzas deben estar entre 1 y 15" }, { status: 400 });
+    }
+    if (msg.includes("gallos_criador_id_fkey")) {
+      return NextResponse.json({ error: "El criador seleccionado no existe" }, { status: 400 });
     }
     return NextResponse.json({ error: msg }, { status: 500 });
   }

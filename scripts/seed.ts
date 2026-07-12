@@ -1,61 +1,84 @@
 import bcrypt from "bcryptjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { sql } from "../src/lib/db";
 
-async function seed() {
-  console.log("Creando esquema...");
-  await sql`
-    CREATE TABLE IF NOT EXISTS usuarios (
-      id SERIAL PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL,
-      rango TEXT NOT NULL DEFAULT 'admin',
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
+async function ensureAdmin() {
+  const { rows } = await sql<{ id: number; password: string }>`
+    SELECT id, password FROM usuarios WHERE username = 'admin'
   `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS criadores (
-      id SERIAL PRIMARY KEY,
-      nombre TEXT NOT NULL UNIQUE,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS gallos (
-      id SERIAL PRIMARY KEY,
-      placa INTEGER NOT NULL UNIQUE,
-      candado INTEGER NOT NULL UNIQUE,
-      criador_id INTEGER REFERENCES criadores(id) ON DELETE SET NULL,
-      color TEXT NOT NULL,
-      imagen TEXT,
-      libras INTEGER NOT NULL DEFAULT 4 CHECK (libras BETWEEN 1 AND 6),
-      onzas INTEGER NOT NULL DEFAULT 8 CHECK (onzas BETWEEN 1 AND 15),
-      cresta TEXT,
-      patas TEXT,
-      pico TEXT,
-      creado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `;
-  await sql`CREATE INDEX IF NOT EXISTS idx_gallos_placa ON gallos (placa)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_gallos_candado ON gallos (candado)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_gallos_criador ON gallos (criador_id)`;
+  if (rows.length === 0) {
+    const hash = await bcrypt.hash("admin123", 10);
+    await sql`
+      INSERT INTO usuarios (username, password, rango)
+      VALUES ('admin', ${hash}, 'admin')
+    `;
+    console.log("✓ Usuario admin creado (admin / admin123)");
+    return;
+  }
 
-  console.log("Creando usuario admin (admin / admin123)...");
-  const hash = await bcrypt.hash("admin123", 10);
-  await sql`
-    INSERT INTO usuarios (username, password, rango)
-    VALUES ('admin', ${hash}, 'admin')
-    ON CONFLICT (username) DO NOTHING
-  `;
+  const valid = await bcrypt.compare("admin123", rows[0].password);
+  if (!valid) {
+    const hash = await bcrypt.hash("admin123", 10);
+    await sql`UPDATE usuarios SET password = ${hash} WHERE id = ${rows[0].id}`;
+    console.log("✓ Contraseña del admin reseteada a 'admin123'");
+  } else {
+    console.log("✓ Usuario admin OK (admin / admin123)");
+  }
+}
 
-  console.log("Creando criador inicial...");
+async function seedCatalog() {
   await sql`INSERT INTO criadores (nombre) VALUES ('Ustariz') ON CONFLICT (nombre) DO NOTHING`;
+  await sql`
+    INSERT INTO colores (nombre) VALUES
+      ('Chino'), ('Giro'), ('Blanco'), ('Jabao'), ('Pinto'),
+      ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao')
+    ON CONFLICT (nombre) DO NOTHING
+  `;
+  await sql`INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez') ON CONFLICT (nombre) DO NOTHING`;
+  await sql`INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas') ON CONFLICT (nombre) DO NOTHING`;
+  await sql`INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING`;
+  console.log("✓ Catálogos inicializados");
+}
 
-  console.log("Seed completado. Usuario: admin / Contraseña: admin123");
+async function ensureSchema() {
+  const migration = readFileSync(join(process.cwd(), "db", "migration.sql"), "utf8");
+  const statements = migration
+    .split(/;\s*$/m)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !s.startsWith("--"));
+
+  for (const stmt of statements) {
+    const trimmed = stmt.replace(/^--.*$/gm, "").trim();
+    if (!trimmed) continue;
+    try {
+      await sql([trimmed] as unknown as TemplateStringsArray);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (
+        msg.includes("already exists") ||
+        msg.includes("duplicate") ||
+        msg.includes("no relation")
+      ) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  console.log("✓ Esquema verificado");
+}
+
+async function seed() {
+  console.log("→ Conectando a Supabase...");
+  console.log("→ Aplicando migración si hace falta...");
+  await ensureSchema();
+  await seedCatalog();
+  await ensureAdmin();
+  console.log("\nSeed completado. Credenciales: admin / admin123");
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("Error:", err);
+  console.error("✗ Error en seed:", err);
   process.exit(1);
 });

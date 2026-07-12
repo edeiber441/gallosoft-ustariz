@@ -10,35 +10,35 @@ async function getGallos(searchParams: { placa?: string; candado?: string; criad
 
   if (placa) {
     const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
+      g.cresta, g.patas, g.pico, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-      WHERE g.placa = ${parseInt(placa)} ORDER BY g.criado_en DESC`;
+      WHERE g.placa = ${parseInt(placa)} ORDER BY g.creado_en DESC`;
     return rows as Gallo[];
   }
 
   if (candado) {
     const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
+      g.cresta, g.patas, g.pico, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-      WHERE g.candado = ${parseInt(candado)} ORDER BY g.criado_en DESC`;
+      WHERE g.candado = ${parseInt(candado)} ORDER BY g.creado_en DESC`;
     return rows as Gallo[];
   }
 
   if (criador_id) {
     const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.criado_en,
+      g.cresta, g.patas, g.pico, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-      WHERE c.id = ${parseInt(criador_id)} ORDER BY g.criado_en DESC`;
+      WHERE c.id = ${parseInt(criador_id)} ORDER BY g.creado_en DESC`;
     return rows as Gallo[];
   }
 
   const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-    g.cresta, g.patas, g.pico, g.criado_en,
+    g.cresta, g.patas, g.pico, g.creado_en,
     c.id AS criador_id, c.nombre AS criador_nombre
-    FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id ORDER BY g.criado_en DESC`;
+    FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id ORDER BY g.creado_en DESC`;
   return rows as Gallo[];
 }
 

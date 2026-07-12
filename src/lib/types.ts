@@ -9,7 +9,7 @@ export type Gallo = {
   cresta: string | null;
   patas: string | null;
   pico: string | null;
-  criado_en: string;
+  creado_en: string;
   criador_id: number | null;
   criador_nombre: string | null;
 };
@@ -54,7 +54,7 @@ export type Stats = {
     imagen: string | null;
     libras: number;
     onzas: number;
-    criado_en: string;
+    creado_en: string;
     criador_nombre: string | null;
   }>;
 };

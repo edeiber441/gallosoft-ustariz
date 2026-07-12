@@ -1,51 +1,69 @@
--- Gallosoft Ustariz — Esquema de base de datos
--- Ejecutar en Vercel Postgres (Neon) o cualquier PostgreSQL
+-- =====================================================================
+-- Gallosoft Ustariz — Migración de base de datos (Supabase / PostgreSQL)
+-- =====================================================================
+-- Esta migración es idempotente: puede ejecutarse varias veces sin
+-- generar errores. Crea el esquema completo y datos iniciales.
+--
+-- Cómo aplicarla:
+--   1) Conectar a Supabase (SQL Editor o psql)
+--   2) Pegar y ejecutar este archivo completo
+--   3) El usuario por defecto es: admin / admin123
+--      (cambiar la contraseña inmediatamente en producción)
+-- =====================================================================
 
--- Tabla de usuarios
+-- Extensión opcional para generar identificadores únicos (no requerida)
+-- CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ---------------------------------------------------------------------
+-- 1) Tabla de usuarios
+-- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS usuarios (
   id          SERIAL PRIMARY KEY,
   username    TEXT NOT NULL UNIQUE,
   password    TEXT NOT NULL,
-  rango       TEXT NOT NULL DEFAULT 'admin',
+  rango       TEXT NOT NULL DEFAULT 'admin' CHECK (rango IN ('admin', 'operador')),
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tabla de criadores
+-- ---------------------------------------------------------------------
+-- 2) Tablas de catálogo (criadores, colores, crestas, patas, picos)
+-- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS criadores (
   id        SERIAL PRIMARY KEY,
   nombre    TEXT NOT NULL UNIQUE,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tabla de colores
 CREATE TABLE IF NOT EXISTS colores (
   id        SERIAL PRIMARY KEY,
   nombre    TEXT NOT NULL UNIQUE,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tabla de crestas
 CREATE TABLE IF NOT EXISTS crestas (
   id        SERIAL PRIMARY KEY,
   nombre    TEXT NOT NULL UNIQUE,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tabla de patas
 CREATE TABLE IF NOT EXISTS patas (
   id        SERIAL PRIMARY KEY,
   nombre    TEXT NOT NULL UNIQUE,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tabla de picos
 CREATE TABLE IF NOT EXISTS picos (
   id        SERIAL PRIMARY KEY,
   nombre    TEXT NOT NULL UNIQUE,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tabla de gallos
+-- ---------------------------------------------------------------------
+-- 3) Tabla principal de gallos
+-- ---------------------------------------------------------------------
+-- placa y candado son opcionales (un gallo puede tener uno, otro o ambos)
+-- pero al menos uno debe estar presente al registrar (validado en la API).
+-- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS gallos (
   id          SERIAL PRIMARY KEY,
   placa       INTEGER UNIQUE,
@@ -59,38 +77,58 @@ CREATE TABLE IF NOT EXISTS gallos (
   patas       TEXT,
   pico        TEXT,
   creado_por  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
+  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  -- Al menos uno de placa o candado debe estar definido
+  CONSTRAINT gallos_llave_presente CHECK (placa IS NOT NULL OR candado IS NOT NULL)
 );
 
--- Hacer placa y candado opcionales si las columnas ya existen con NOT NULL
-ALTER TABLE gallos ALTER COLUMN placa DROP NOT NULL;
-ALTER TABLE gallos ALTER COLUMN candado DROP NOT NULL;
+-- ---------------------------------------------------------------------
+-- 4) Índices para acelerar búsquedas
+-- ---------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_gallos_placa        ON gallos (placa)         WHERE placa IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_gallos_candado      ON gallos (candado)       WHERE candado IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_gallos_criador      ON gallos (criador_id);
+CREATE INDEX IF NOT EXISTS idx_gallos_creado_en    ON gallos (creado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_gallos_color        ON gallos (color);
 
--- Índices para búsqueda por llave (placa y candado)
-CREATE INDEX IF NOT EXISTS idx_gallos_placa ON gallos (placa);
-CREATE INDEX IF NOT EXISTS idx_gallos_candado ON gallos (candado);
-CREATE INDEX IF NOT EXISTS idx_gallos_criador ON gallos (criador_id);
+-- ---------------------------------------------------------------------
+-- 5) Datos iniciales (idempotentes)
+-- ---------------------------------------------------------------------
 
--- Usuario admin inicial (password: admin123)
--- La contraseña se debe hashear con bcryptjs; generada con hash:
---   const hash = await bcrypt.hash('admin123', 10)
--- INSERT manual:
+-- Usuario admin (password: admin123)
+-- Hash bcrypt generado con: bcrypt.hash('admin123', 10)
+-- Se regenera automáticamente con el script npm run seed si no coincide.
 INSERT INTO usuarios (username, password, rango)
-VALUES ('admin', '$2a$10$REEMPLAZAR_CON_HASH_BCRYPT', 'admin')
+VALUES (
+  'admin',
+  '$2b$10$u1S6uNdu8ZWBNB37nVWeSerngaLEPqxb9TDloUHPvhSWo3LB6/MfW',
+  'admin'
+)
 ON CONFLICT (username) DO NOTHING;
 
--- Criadores de ejemplo
-INSERT INTO criadores (nombre) VALUES ('Ustariz') ON CONFLICT (nombre) DO NOTHING;
+-- Criador por defecto
+INSERT INTO criadores (nombre) VALUES ('Ustariz')
+ON CONFLICT (nombre) DO NOTHING;
 
--- Colores de ejemplo (Blanco y Jabao por separado)
-DELETE FROM colores WHERE nombre = 'Blanco Jabao';
-INSERT INTO colores (nombre) VALUES ('Chino'), ('Giro'), ('Blanco'), ('Jabao'), ('Pinto'), ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao') ON CONFLICT (nombre) DO NOTHING;
+-- Colores
+INSERT INTO colores (nombre) VALUES
+  ('Chino'), ('Giro'), ('Blanco'), ('Jabao'), ('Pinto'),
+  ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao')
+ON CONFLICT (nombre) DO NOTHING;
 
--- Crestas de ejemplo
-INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez') ON CONFLICT (nombre) DO NOTHING;
+-- Crestas
+INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez')
+ON CONFLICT (nombre) DO NOTHING;
 
--- Patas de ejemplo
-INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas') ON CONFLICT (nombre) DO NOTHING;
+-- Patas
+INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas')
+ON CONFLICT (nombre) DO NOTHING;
 
--- Picos de ejemplo
-INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING;
+-- Picos
+INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- =====================================================================
+-- FIN DE LA MIGRACIÓN
+-- =====================================================================

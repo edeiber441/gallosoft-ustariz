@@ -1,180 +1,76 @@
-type SqlResult = { rows: Record<string, unknown>[] };
-type SqlFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<SqlResult>;
+import { Pool, type QueryResult, type QueryResultRow } from "pg";
 
-let _sql: SqlFn | null = null;
+type SqlFn = <T extends QueryResultRow = QueryResultRow>(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+) => Promise<QueryResult<T>>;
 
-async function getSql(): Promise<SqlFn> {
-  if (_sql) return _sql;
+function buildPool(): Pool {
+  const connectionString =
+    process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-  if (connectionString) {
-    try {
-      const { Client } = await import("pg");
-      const client = new Client({
-        connectionString,
-        ssl: connectionString.includes("supabase") || connectionString.includes("vercel")
-          ? { rejectUnauthorized: false }
-          : undefined,
-        connectionTimeoutMillis: 15000,
-      });
-      await client.connect();
-      console.log("[db] Conectado a PostgreSQL remoto (Supabase)");
-
-      const pgSql: SqlFn = async (strings: TemplateStringsArray, ...values: unknown[]) => {
-        let query = "";
-        for (let i = 0; i < strings.length; i++) {
-          query += strings[i];
-          if (i < values.length) {
-            query += `$${i + 1}`;
-          }
-        }
-        const result = await client.query(query, values as unknown[]);
-        return { rows: result.rows as Record<string, unknown>[] };
-      };
-      _sql = pgSql;
-      return _sql;
-    } catch (err) {
-      console.error("[db] Error conectando a PostgreSQL:", err instanceof Error ? err.message : err);
-      console.warn("[db] Cayendo a pg-mem (datos de prueba)");
-    }
-  } else {
-    console.warn("[db] DATABASE_URL no encontrada. Usando pg-mem (datos de prueba)");
-  }
-
-  const { newDb } = await import("pg-mem");
-  const bcrypt = await import("bcryptjs");
-  const db = newDb();
-
-  db.public.many(`
-    CREATE TABLE usuarios (
-      id SERIAL PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL,
-      rango TEXT NOT NULL DEFAULT 'admin',
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE criadores (
-      id SERIAL PRIMARY KEY,
-      nombre TEXT NOT NULL UNIQUE,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE colores (
-      id SERIAL PRIMARY KEY,
-      nombre TEXT NOT NULL UNIQUE,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE crestas (
-      id SERIAL PRIMARY KEY,
-      nombre TEXT NOT NULL UNIQUE,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE patas (
-      id SERIAL PRIMARY KEY,
-      nombre TEXT NOT NULL UNIQUE,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE picos (
-      id SERIAL PRIMARY KEY,
-      nombre TEXT NOT NULL UNIQUE,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE TABLE gallos (
-      id SERIAL PRIMARY KEY,
-      placa INTEGER UNIQUE,
-      candado INTEGER UNIQUE,
-      criador_id INTEGER REFERENCES criadores(id) ON DELETE SET NULL,
-      color TEXT NOT NULL,
-      imagen TEXT,
-      libras INTEGER NOT NULL DEFAULT 4 CHECK (libras BETWEEN 1 AND 6),
-      onzas INTEGER NOT NULL DEFAULT 8 CHECK (onzas BETWEEN 1 AND 15),
-      cresta TEXT,
-      patas TEXT,
-      pico TEXT,
-      creado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-      creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-  `);
-
-  const hash = await bcrypt.default.hash("admin123", 10);
-  const userRows = db.public.many(
-    `INSERT INTO usuarios (username, password, rango) VALUES ('admin', '${hash}', 'admin') RETURNING id`
-  );
-  const userId = userRows[0].id as number;
-
-  db.public.many(
-    `INSERT INTO criadores (nombre) VALUES ('Ustariz'), ('Criador Norte'), ('Criador Sur') RETURNING id, nombre`
-  );
-
-  db.public.many(
-    `INSERT INTO colores (nombre) VALUES ('Chino'), ('Giro'), ('Blanco'), ('Jabao'), ('Pinto'), ('Gallino'), ('Mono'), ('Negro'), ('Canaguey'), ('Morao') RETURNING id, nombre`
-  );
-
-  db.public.many(
-    `INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez') ON CONFLICT (nombre) DO NOTHING RETURNING id, nombre`
-  );
-
-  db.public.many(
-    `INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas') ON CONFLICT (nombre) DO NOTHING RETURNING id, nombre`
-  );
-
-  db.public.many(
-    `INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING RETURNING id, nombre`
-  );
-
-  const gallosSeed = [
-    { placa: 100, candado: 501, color: "Giro", libras: 4, onzas: 8 },
-    { placa: 101, candado: 502, color: "Negro", libras: 5, onzas: 3 },
-    { placa: 102, candado: 503, color: "Chino", libras: 3, onzas: 10 },
-    { placa: 103, candado: 504, color: "Pinto", libras: 4, onzas: 12 },
-    { placa: 104, candado: 505, color: "Morao", libras: 5, onzas: 6 },
-  ];
-
-  for (const g of gallosSeed) {
-    const hoursAgo = Math.floor(Math.random() * 48) + 1;
-    db.public.many(
-      `INSERT INTO gallos (placa, candado, criador_id, color, libras, onzas, cresta, patas, pico, creado_por, creado_en)
-       VALUES (${g.placa}, ${g.candado}, 1, '${g.color}', ${g.libras}, ${g.onzas}, 'Simple', 'Verdes', 'Curvo', ${userId}, now() - interval '${hoursAgo} hours')`
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL no está definida. Configúrala en .env.local apuntando a Supabase."
     );
   }
 
-  const memSql: SqlFn = (strings: TemplateStringsArray, ...values: unknown[]) => {
+  return new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 15_000,
+  });
+}
+
+const pool = buildPool();
+
+pool.on("error", (err) => {
+  console.error("[db] Error inesperado en el pool:", err);
+});
+
+function buildSql(pool: Pool): SqlFn {
+  return async <T extends QueryResultRow = QueryResultRow>(
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<QueryResult<T>> => {
     let query = "";
     for (let i = 0; i < strings.length; i++) {
       query += strings[i];
       if (i < values.length) {
-        const v = values[i];
-        if (v === null || v === undefined) {
-          query += "NULL";
-        } else if (typeof v === "number") {
-          query += String(v);
-        } else if (typeof v === "string") {
-          query += `'${v.replace(/'/g, "''")}'`;
-        } else if (typeof v === "boolean") {
-          query += v ? "true" : "false";
-        } else {
-          query += `'${String(v).replace(/'/g, "''")}'`;
-        }
+        query += `$${i + 1}`;
       }
     }
-    try {
-      const rows = db.public.many(query);
-      return Promise.resolve({ rows });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("no data") || msg.includes("No rows")) {
-        return Promise.resolve({ rows: [] });
-      }
-      throw err;
-    }
+    const result = await pool.query<T>(query, values as unknown[]);
+    return result;
   };
-
-  _sql = memSql;
-  console.log("[db] Usando pg-mem con datos de prueba. Login: admin / admin123");
-  return _sql;
 }
 
-export async function sql(strings: TemplateStringsArray, ...values: unknown[]): Promise<SqlResult> {
-  const s = await getSql();
-  return s(strings, ...values);
+export const sql: SqlFn = buildSql(pool);
+
+export type GalloRow = {
+  id: number;
+  placa: number | null;
+  candado: number | null;
+  color: string;
+  imagen: string | null;
+  libras: number;
+  onzas: number;
+  cresta: string | null;
+  patas: string | null;
+  pico: string | null;
+  creado_en: string;
+  criador_id: number | null;
+  criador_nombre: string | null;
+};
+
+export async function ping(): Promise<boolean> {
+  try {
+    await sql`SELECT 1`;
+    return true;
+  } catch (err) {
+    console.error("[db] ping falló:", err);
+    return false;
+  }
 }
