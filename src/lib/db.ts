@@ -5,7 +5,11 @@ type SqlFn = <T extends QueryResultRow = QueryResultRow>(
   ...values: unknown[]
 ) => Promise<QueryResult<T>>;
 
-function buildPool(): Pool {
+let pool: Pool | null = null;
+
+function getPool(): Pool {
+  if (pool) return pool;
+
   const connectionString =
     process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -15,39 +19,35 @@ function buildPool(): Pool {
     );
   }
 
-  return new Pool({
+  pool = new Pool({
     connectionString,
     ssl: { rejectUnauthorized: false },
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 15_000,
   });
+
+  pool.on("error", (err) => {
+    console.error("[db] Error inesperado en el pool:", err);
+  });
+
+  return pool;
 }
 
-const pool = buildPool();
-
-pool.on("error", (err) => {
-  console.error("[db] Error inesperado en el pool:", err);
-});
-
-function buildSql(pool: Pool): SqlFn {
-  return async <T extends QueryResultRow = QueryResultRow>(
-    strings: TemplateStringsArray,
-    ...values: unknown[]
-  ): Promise<QueryResult<T>> => {
-    let query = "";
-    for (let i = 0; i < strings.length; i++) {
-      query += strings[i];
-      if (i < values.length) {
-        query += `$${i + 1}`;
-      }
+export const sql: SqlFn = async function sql<T extends QueryResultRow = QueryResultRow>(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+): Promise<QueryResult<T>> {
+  const p = getPool();
+  let query = "";
+  for (let i = 0; i < strings.length; i++) {
+    query += strings[i];
+    if (i < values.length) {
+      query += `$${i + 1}`;
     }
-    const result = await pool.query<T>(query, values as unknown[]);
-    return result;
-  };
-}
-
-export const sql: SqlFn = buildSql(pool);
+  }
+  return p.query<T>(query, values as unknown[]);
+};
 
 export type GalloRow = {
   id: number;
