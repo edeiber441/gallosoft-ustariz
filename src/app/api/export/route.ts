@@ -9,10 +9,10 @@ export async function GET() {
   }
 
   const { rows } = await sql`SELECT g.placa, g.candado, c.nombre AS criador, g.color,
-    g.libras, g.onzas, g.cresta, g.patas, g.pico, g.creado_en
+    g.libras, g.onzas, g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en
     FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id ORDER BY g.creado_en DESC`;
 
-  const headers = ["Placa", "Candado", "Criador", "Color", "Libras", "Onzas", "Cresta", "Patas", "Pico", "Fecha"];
+  const headers = ["Placa", "Candado", "Criador", "Color", "Libras", "Onzas", "Cresta", "Patas", "Pico", "Mama", "Papa", "Fecha"];
   const escape = (val: unknown) => {
     const s = val == null ? "" : String(val);
     if (s.includes(",") || s.includes('"') || s.includes("\n")) {
@@ -34,6 +34,8 @@ export async function GET() {
       escape(record.cresta),
       escape(record.patas),
       escape(record.pico),
+      escape(record.mama),
+      escape(record.papa),
       escape(record.creado_en),
     ].join(","));
   }

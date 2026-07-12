@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 
 type Props = {
   initialCriadores: Criador[];
@@ -9,11 +9,13 @@ type Props = {
   initialCrestas: Cresta[];
   initialPatas: Pata[];
   initialPicos: Pico[];
+  initialMamas: Mama[];
+  initialPapas: Papa[];
 };
 
-type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos";
+type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos" | "mamas" | "papas";
 
-export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos }: Props) {
+export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos, initialMamas, initialPapas }: Props) {
   const [tab, setTab] = useState<TabKey>("criadores");
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -22,6 +24,8 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
     { key: "crestas", label: "Crestas" },
     { key: "patas", label: "Patas" },
     { key: "picos", label: "Picos" },
+    { key: "mamas", label: "Mamas" },
+    { key: "papas", label: "Papas" },
   ];
 
   const config: Record<TabKey, { items: { id: number; nombre: string }[]; apiPath: string; placeholder: string; emptyText: string; addError: string }> = {
@@ -30,13 +34,15 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
     crestas: { items: initialCrestas, apiPath: "/api/crestas", placeholder: "Nombre de la cresta", emptyText: "No hay crestas registradas.", addError: "La cresta ya existe" },
     patas: { items: initialPatas, apiPath: "/api/patas", placeholder: "Tipo de patas", emptyText: "No hay patas registradas.", addError: "Las patas ya existen" },
     picos: { items: initialPicos, apiPath: "/api/picos", placeholder: "Tipo de pico", emptyText: "No hay picos registrados.", addError: "El pico ya existe" },
+    mamas: { items: initialMamas, apiPath: "/api/mamas", placeholder: "Nombre de la mama", emptyText: "No hay mamas registradas.", addError: "La mama ya existe" },
+    papas: { items: initialPapas, apiPath: "/api/papas", placeholder: "Nombre del papa", emptyText: "No hay papas registrados.", addError: "El papa ya existe" },
   };
 
   const current = config[tab];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
         {tabs.map((t) => (
           <button
             key={t.key}

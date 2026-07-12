@@ -16,6 +16,8 @@ type GalloBody = {
   cresta?: string | null;
   patas?: string | null;
   pico?: string | null;
+  mama?: string | null;
+  papa?: string | null;
 };
 
 function toIntOrNull(v: unknown): number | null {
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
   if (placa !== null) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.placa = ${placa} ORDER BY g.creado_en DESC NULLS LAST`;
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest) {
   if (candado !== null) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.candado = ${candado} ORDER BY g.creado_en DESC`;
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
   if (criadorId !== null) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.criador_id = ${criadorId} ORDER BY g.creado_en DESC`;
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
   if (criador) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE c.nombre ILIKE ${"%" + criador + "%"} ORDER BY g.creado_en DESC`;
@@ -96,7 +98,7 @@ export async function GET(request: NextRequest) {
 
   const { rows } = await sql<GalloRow>`
     SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.creado_en,
+      g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
     FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
     ORDER BY g.creado_en DESC`;
@@ -123,6 +125,8 @@ export async function POST(request: NextRequest) {
   const cresta = toTrimmedString(body.cresta);
   const patas = toTrimmedString(body.patas);
   const pico = toTrimmedString(body.pico);
+  const mama = toTrimmedString(body.mama);
+  const papa = toTrimmedString(body.papa);
 
   if (placaVal === null && candadoVal === null) {
     return NextResponse.json(
@@ -162,11 +166,11 @@ export async function POST(request: NextRequest) {
     const { rows } = await sql<GalloRow>`
       INSERT INTO gallos (
         placa, candado, criador_id, color, imagen,
-        libras, onzas, cresta, patas, pico, creado_por
+        libras, onzas, cresta, patas, pico, mama, papa, creado_por
       )
       VALUES (
         ${placaVal}, ${candadoVal}, ${criadorIdVal}, ${color}, ${imagen},
-        ${librasNum}, ${onzasNum}, ${cresta}, ${patas}, ${pico}, ${session.id}
+        ${librasNum}, ${onzasNum}, ${cresta}, ${patas}, ${pico}, ${mama}, ${papa}, ${session.id}
       )
       RETURNING id, placa, candado, color, libras, onzas
     `;

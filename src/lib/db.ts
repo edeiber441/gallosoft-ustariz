@@ -60,6 +60,8 @@ export type GalloRow = {
   cresta: string | null;
   patas: string | null;
   pico: string | null;
+  mama: string | null;
+  papa: string | null;
   creado_en: string;
   criador_id: number | null;
   criador_nombre: string | null;

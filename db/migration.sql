@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 -- ---------------------------------------------------------------------
--- 2) Tablas de catálogo (criadores, colores, crestas, patas, picos)
+-- 2) Tablas de catálogo (criadores, colores, crestas, patas, picos, mamas, papas)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS criadores (
   id        SERIAL PRIMARY KEY,
@@ -58,6 +58,18 @@ CREATE TABLE IF NOT EXISTS picos (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS mamas (
+  id        SERIAL PRIMARY KEY,
+  nombre    TEXT NOT NULL UNIQUE,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS papas (
+  id        SERIAL PRIMARY KEY,
+  nombre    TEXT NOT NULL UNIQUE,
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ---------------------------------------------------------------------
 -- 3) Tabla principal de gallos
 -- ---------------------------------------------------------------------
@@ -82,6 +94,11 @@ CREATE TABLE IF NOT EXISTS gallos (
   -- Al menos uno de placa o candado debe estar definido
   CONSTRAINT gallos_llave_presente CHECK (placa IS NOT NULL OR candado IS NOT NULL)
 );
+
+-- Columnas de progenie (mama/papa) — opcionales. Idempotentes por si la
+-- tabla gallos ya existía sin estas columnas.
+ALTER TABLE gallos ADD COLUMN IF NOT EXISTS mama TEXT;
+ALTER TABLE gallos ADD COLUMN IF NOT EXISTS papa TEXT;
 
 -- ---------------------------------------------------------------------
 -- 4) Índices para acelerar búsquedas
@@ -127,6 +144,14 @@ ON CONFLICT (nombre) DO NOTHING;
 
 -- Picos
 INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Mamas
+INSERT INTO mamas (nombre) VALUES ('Desconocida')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Papas
+INSERT INTO papas (nombre) VALUES ('Desconocido')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- =====================================================================

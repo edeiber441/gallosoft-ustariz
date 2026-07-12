@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 import InlineOptionAdd from "@/components/InlineOptionAdd";
 
 type Props = {
@@ -21,6 +21,8 @@ type FormState = {
   cresta: string;
   patas: string;
   pico: string;
+  mama: string;
+  papa: string;
 };
 
 type CatalogState = {
@@ -29,6 +31,8 @@ type CatalogState = {
   crestas: Cresta[];
   patas: Pata[];
   picos: Pico[];
+  mamas: Mama[];
+  papas: Papa[];
 };
 
 const EMPTY_CATALOG: CatalogState = {
@@ -37,6 +41,8 @@ const EMPTY_CATALOG: CatalogState = {
   crestas: [],
   patas: [],
   picos: [],
+  mamas: [],
+  papas: [],
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -57,6 +63,8 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
       cresta: gallo.cresta ?? "",
       patas: gallo.patas ?? "",
       pico: gallo.pico ?? "",
+      mama: gallo.mama ?? "",
+      papa: gallo.papa ?? "",
     };
   }
   return {
@@ -71,6 +79,8 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
     cresta: "",
     patas: "",
     pico: "",
+    mama: "",
+    papa: "",
   };
 };
 
@@ -127,7 +137,6 @@ export default function GalloForm({ gallo }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    setCatalogLoading(true);
 
     Promise.all([
       fetch("/api/criadores").then((r) => (r.ok ? r.json() : [])),
@@ -135,8 +144,10 @@ export default function GalloForm({ gallo }: Props) {
       fetch("/api/crestas").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/patas").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/picos").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/mamas").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/papas").then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([criadores, colores, crestas, patas, picos]) => {
+      .then(([criadores, colores, crestas, patas, picos, mamas, papas]) => {
         if (cancelled) return;
         setCatalog({
           criadores: Array.isArray(criadores) ? criadores : [],
@@ -144,6 +155,8 @@ export default function GalloForm({ gallo }: Props) {
           crestas: Array.isArray(crestas) ? crestas : [],
           patas: Array.isArray(patas) ? patas : [],
           picos: Array.isArray(picos) ? picos : [],
+          mamas: Array.isArray(mamas) ? mamas : [],
+          papas: Array.isArray(papas) ? papas : [],
         });
       })
       .catch(() => {
@@ -241,6 +254,8 @@ export default function GalloForm({ gallo }: Props) {
       cresta: form.cresta.trim() || null,
       patas: form.patas.trim() || null,
       pico: form.pico.trim() || null,
+      mama: form.mama.trim() || null,
+      papa: form.papa.trim() || null,
     };
 
     try {
@@ -496,6 +511,70 @@ export default function GalloForm({ gallo }: Props) {
             accept="image/*"
             onChange={handleImageSelect}
             className="hidden"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>Mama (opcional)</label>
+        <div className={selectWrapClass}>
+          <select
+            value={form.mama}
+            onChange={(e) => update("mama", e.target.value)}
+            className={selectClass}
+            disabled={catalogLoading}
+          >
+            <option value="">Seleccionar mama...</option>
+            {catalog.mamas.map((c) => (
+              <option key={c.id} value={c.nombre}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/mamas"
+            label="mama"
+            existingNames={catalog.mamas.map((c) => c.nombre)}
+            onCreated={(item) => {
+              const next = [
+                ...catalog.mamas,
+                { id: item.id, nombre: item.nombre, creado_en: "" },
+              ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+              setCatalog((prev) => ({ ...prev, mamas: next }));
+              update("mama", item.nombre);
+            }}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>Papa (opcional)</label>
+        <div className={selectWrapClass}>
+          <select
+            value={form.papa}
+            onChange={(e) => update("papa", e.target.value)}
+            className={selectClass}
+            disabled={catalogLoading}
+          >
+            <option value="">Seleccionar papa...</option>
+            {catalog.papas.map((c) => (
+              <option key={c.id} value={c.nombre}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/papas"
+            label="papa"
+            existingNames={catalog.papas.map((c) => c.nombre)}
+            onCreated={(item) => {
+              const next = [
+                ...catalog.papas,
+                { id: item.id, nombre: item.nombre, creado_en: "" },
+              ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+              setCatalog((prev) => ({ ...prev, papas: next }));
+              update("papa", item.nombre);
+            }}
           />
         </div>
       </div>

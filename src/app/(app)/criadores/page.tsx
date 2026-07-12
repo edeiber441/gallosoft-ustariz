@@ -1,6 +1,6 @@
 import { sql } from "@/lib/db";
 import ConfigManager from "@/components/ConfigManager";
-import type { Criador, Color, Cresta, Pata, Pico } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,19 +29,33 @@ async function getPicos(): Promise<Pico[]> {
   return rows as Pico[];
 }
 
+async function getMamas(): Promise<Mama[]> {
+  const { rows } = await sql`SELECT id, nombre, creado_en FROM mamas ORDER BY nombre ASC`;
+  return rows as Mama[];
+}
+
+async function getPapas(): Promise<Papa[]> {
+  const { rows } = await sql`SELECT id, nombre, creado_en FROM papas ORDER BY nombre ASC`;
+  return rows as Papa[];
+}
+
 export default async function ConfigPage() {
   let criadores: Criador[] = [];
   let colores: Color[] = [];
   let crestas: Cresta[] = [];
   let patas: Pata[] = [];
   let picos: Pico[] = [];
+  let mamas: Mama[] = [];
+  let papas: Papa[] = [];
   try {
-    [criadores, colores, crestas, patas, picos] = await Promise.all([
+    [criadores, colores, crestas, patas, picos, mamas, papas] = await Promise.all([
       getCriadores(),
       getColores(),
       getCrestas(),
       getPatas(),
       getPicos(),
+      getMamas(),
+      getPapas(),
     ]);
   } catch {
     criadores = [];
@@ -49,6 +63,8 @@ export default async function ConfigPage() {
     crestas = [];
     patas = [];
     picos = [];
+    mamas = [];
+    papas = [];
   }
 
   return (
@@ -62,6 +78,8 @@ export default async function ConfigPage() {
         initialCrestas={crestas}
         initialPatas={patas}
         initialPicos={picos}
+        initialMamas={mamas}
+        initialPapas={papas}
       />
     </>
   );

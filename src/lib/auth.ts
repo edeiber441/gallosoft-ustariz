@@ -22,7 +22,8 @@ export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: false,
   sameSite: "lax" as const,
-  maxAge: SESSION_DURATION,
+  // Sin maxAge: la cookie es de sesión y se borra al cerrar el navegador.
+  // El logout real al cerrar la pestaña lo dispara SessionGuard con sendBeacon.
   path: "/",
 };
 
