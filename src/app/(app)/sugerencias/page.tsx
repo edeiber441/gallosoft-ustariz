@@ -15,7 +15,7 @@ export default async function SugerenciasPage() {
       const { rows } = await sql`
         SELECT s.id, s.gallo_id, s.usuario_id, s.payload, s.estado,
           s.revisado_por, s.revisado_en, s.creado_en,
-          u.username AS usuario_nombre,
+          COALESCE(u.nombre, u.username) AS usuario_nombre,
           g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
         FROM sugerencias s
         LEFT JOIN usuarios u ON s.usuario_id = u.id
@@ -28,7 +28,7 @@ export default async function SugerenciasPage() {
       const { rows } = await sql`
         SELECT s.id, s.gallo_id, s.usuario_id, s.payload, s.estado,
           s.revisado_por, s.revisado_en, s.creado_en,
-          u.username AS usuario_nombre,
+          COALESCE(u.nombre, u.username) AS usuario_nombre,
           g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
         FROM sugerencias s
         LEFT JOIN usuarios u ON s.usuario_id = u.id

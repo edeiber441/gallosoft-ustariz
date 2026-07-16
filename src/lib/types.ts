@@ -66,6 +66,7 @@ export type Papa = {
 export type Usuario = {
   id: number;
   username: string;
+  nombre: string | null;
   rango: string;
   creado_en: string;
 };

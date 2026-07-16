@@ -20,10 +20,14 @@
 CREATE TABLE IF NOT EXISTS usuarios (
   id          SERIAL PRIMARY KEY,
   username    TEXT NOT NULL UNIQUE,
+  nombre      TEXT,
   password    TEXT NOT NULL,
   rango       TEXT NOT NULL DEFAULT 'admin' CHECK (rango IN ('admin', 'operador')),
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Nombre del propietario (aparte de la cédula/username). Idempotente.
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nombre TEXT;
 
 -- ---------------------------------------------------------------------
 -- 2) Tablas de catálogo (criadores, colores, crestas, patas, picos, mamas, papas)

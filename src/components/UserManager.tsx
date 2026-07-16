@@ -6,10 +6,12 @@ import type { Usuario } from "@/lib/types";
 export default function UserManager() {
   const [users, setUsers] = useState<Usuario[]>([]);
   const [cedula, setCedula] = useState("");
+  const [nombre, setNombre] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState<{ id: number; username: string } | null>(null);
+  const [editing, setEditing] = useState<{ id: number; username: string; nombre: string | null } | null>(null);
+  const [editNombre, setEditNombre] = useState("");
   const [editPassword, setEditPassword] = useState("");
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function UserManager() {
       const res = await fetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cedula: cedula.trim(), password }),
+        body: JSON.stringify({ cedula: cedula.trim(), nombre: nombre.trim(), password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -36,8 +38,9 @@ export default function UserManager() {
         setBusy(false);
         return;
       }
-      setUsers((prev) => [...prev, data].sort((a, b) => a.username.localeCompare(b.username)));
+      setUsers((prev) => [...prev, data].sort((a, b) => (a.nombre || a.username).localeCompare(b.nombre || b.username)));
       setCedula("");
+      setNombre("");
       setPassword("");
     } catch {
       setError("Error de conexión");
@@ -46,21 +49,34 @@ export default function UserManager() {
     }
   }
 
-  async function handleUpdatePassword(id: number) {
-    if (!editPassword || editPassword.length < 4) {
+  async function handleSave(id: number) {
+    setError("");
+    if (!editPassword && editNombre === "") {
+      setError("Indica un nombre o una contraseña para guardar");
+      return;
+    }
+    if (editPassword && editPassword.length < 4) {
       setError("La contraseña debe tener al menos 4 caracteres");
       return;
     }
-    setError("");
     setBusy(true);
     try {
+      const payload: Record<string, string> = {};
+      if (editNombre !== "") payload.nombre = editNombre.trim();
+      if (editPassword) payload.password = editPassword;
       const res = await fetch(`/api/usuarios/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: editPassword }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        setUsers((prev) =>
+          prev
+            .map((u) => (u.id === id ? { ...u, nombre: editNombre !== "" ? editNombre.trim() : u.nombre } : u))
+            .sort((a, b) => (a.nombre || a.username).localeCompare(b.nombre || b.username))
+        );
         setEditing(null);
+        setEditNombre("");
         setEditPassword("");
       } else {
         const data = await res.json();
@@ -94,6 +110,16 @@ export default function UserManager() {
   return (
     <div className="flex flex-col gap-4">
       <form onSubmit={handleAdd} className="flex flex-col gap-2">
+        <div>
+          <label className={labelClass}>Nombre del propietario</label>
+          <input
+            type="text"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Ej: Juan Pérez"
+            className={inputClass}
+          />
+        </div>
         <div>
           <label className={labelClass}>Cédula del nuevo usuario</label>
           <input
@@ -143,19 +169,26 @@ export default function UserManager() {
           >
             {editing?.id === u.id ? (
               <>
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-on-background text-base font-medium">{u.username}</span>
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <span className="text-on-surface-variant text-xs font-mono">C.C. {u.username}</span>
+                  <input
+                    type="text"
+                    value={editNombre}
+                    onChange={(e) => setEditNombre(e.target.value)}
+                    placeholder="Nombre del propietario"
+                    className="bg-surface-container border border-primary rounded-lg px-3 py-2 text-on-background text-sm"
+                    autoFocus
+                  />
                   <input
                     type="text"
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    placeholder="Nueva contraseña"
+                    placeholder="Nueva contraseña (dejar vacío para no cambiar)"
                     className="bg-surface-container border border-primary rounded-lg px-3 py-2 text-on-background text-sm"
-                    autoFocus
                   />
                 </div>
                 <button
-                  onClick={() => handleUpdatePassword(u.id)}
+                  onClick={() => handleSave(u.id)}
                   disabled={busy}
                   className="text-primary p-2 disabled:opacity-50"
                   title="Guardar"
@@ -163,7 +196,7 @@ export default function UserManager() {
                   <span className="material-symbols-outlined">check</span>
                 </button>
                 <button
-                  onClick={() => { setEditing(null); setEditPassword(""); setError(""); }}
+                  onClick={() => { setEditing(null); setEditNombre(""); setEditPassword(""); setError(""); }}
                   className="text-on-surface-variant p-2"
                   title="Cancelar"
                 >
@@ -172,22 +205,27 @@ export default function UserManager() {
               </>
             ) : (
               <>
-                <span className="flex-1 text-on-background text-base">
-                  {u.username}
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${u.rango === "admin" ? "bg-primary/20 text-primary" : "bg-surface-container-highest text-on-surface-variant"}`}>
-                    {u.rango}
+                <div className="flex-1 flex flex-col">
+                  <span className="text-on-background text-base font-medium">
+                    {u.nombre || "Sin nombre"}
                   </span>
-                </span>
+                  <span className="text-on-surface-variant text-xs font-mono">
+                    C.C. {u.username}
+                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${u.rango === "admin" ? "bg-primary/20 text-primary" : "bg-surface-container-highest text-on-surface-variant"}`}>
+                      {u.rango}
+                    </span>
+                  </span>
+                </div>
                 <button
-                  onClick={() => { setEditing({ id: u.id, username: u.username }); setEditPassword(""); setError(""); }}
+                  onClick={() => { setEditing({ id: u.id, username: u.username, nombre: u.nombre }); setEditNombre(u.nombre || ""); setEditPassword(""); setError(""); }}
                   className="text-primary p-2"
-                  title="Cambiar contraseña"
+                  title="Editar"
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>key</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>edit</span>
                 </button>
                 {u.rango !== "admin" && (
                   <button
-                    onClick={() => handleDelete(u.id, u.username)}
+                    onClick={() => handleDelete(u.id, u.nombre || u.username)}
                     disabled={busy}
                     className="text-error p-2 disabled:opacity-50"
                     title="Eliminar"

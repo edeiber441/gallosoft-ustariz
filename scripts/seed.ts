@@ -10,12 +10,15 @@ async function ensureAdmin() {
   if (rows.length === 0) {
     const hash = await bcrypt.hash("admin123", 10);
     await sql`
-      INSERT INTO usuarios (username, password, rango)
-      VALUES ('admin', ${hash}, 'admin')
+      INSERT INTO usuarios (username, nombre, password, rango)
+      VALUES ('admin', 'Administrador', ${hash}, 'admin')
     `;
     console.log("✓ Usuario admin creado (admin / admin123)");
     return;
   }
+
+  // Asegurar que el admin tenga nombre
+  await sql`UPDATE usuarios SET nombre = COALESCE(nombre, 'Administrador') WHERE username = 'admin'`;
 
   const valid = await bcrypt.compare("admin123", rows[0].password);
   if (!valid) {

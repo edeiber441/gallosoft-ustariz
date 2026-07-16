@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: "Solo el admin puede gestionar usuarios" }, { status: 403 });
   }
 
-  const { rows } = await sql`SELECT id, username, rango, creado_en FROM usuarios ORDER BY creado_en ASC`;
+  const { rows } = await sql`SELECT id, username, nombre, rango, creado_en FROM usuarios ORDER BY creado_en ASC`;
   return NextResponse.json(rows);
 }
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { cedula, password } = body as { cedula?: string; password?: string };
+    const { cedula, password, nombre } = body as { cedula?: string; password?: string; nombre?: string };
 
     if (!cedula || !cedula.trim()) {
       return NextResponse.json({ error: "La cédula es obligatoria" }, { status: 400 });
@@ -37,14 +37,15 @@ export async function POST(request: NextRequest) {
     }
 
     const cedulaTrim = cedula.trim();
+    const nombreTrim = nombre?.trim() || null;
     const hash = await bcrypt.hash(password, 10);
 
     const { rows } = await sql<{ id: number; username: string }>`
-      INSERT INTO usuarios (username, password, rango)
-      VALUES (${cedulaTrim}, ${hash}, 'operador')
+      INSERT INTO usuarios (username, nombre, password, rango)
+      VALUES (${cedulaTrim}, ${nombreTrim}, ${hash}, 'operador')
       RETURNING id, username
     `;
-    return NextResponse.json({ id: rows[0].id, username: rows[0].username, rango: "operador" });
+    return NextResponse.json({ id: rows[0].id, username: rows[0].username, nombre: nombreTrim, rango: "operador" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
     if (msg.includes("unique") || msg.includes("duplicate")) {

@@ -21,14 +21,27 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   }
 
   const body = await request.json();
-  const { password } = body as { password?: string };
+  const { password, nombre } = body as { password?: string; nombre?: string };
 
-  if (!password || password.length < 4) {
+  const nombreTrim = nombre !== undefined ? (nombre.trim() || null) : undefined;
+
+  if ((!password || password.length < 4) && nombreTrim === undefined) {
+    return NextResponse.json({ error: "Indica una contraseña (mín. 4 caracteres) o un nombre" }, { status: 400 });
+  }
+
+  if (password && password.length < 4) {
     return NextResponse.json({ error: "La contraseña debe tener al menos 4 caracteres" }, { status: 400 });
   }
 
-  const hash = await bcrypt.hash(password, 10);
-  await sql`UPDATE usuarios SET password = ${hash} WHERE id = ${idNum}`;
+  if (password && nombreTrim !== undefined) {
+    const hash = await bcrypt.hash(password, 10);
+    await sql`UPDATE usuarios SET password = ${hash}, nombre = ${nombreTrim} WHERE id = ${idNum}`;
+  } else if (password) {
+    const hash = await bcrypt.hash(password, 10);
+    await sql`UPDATE usuarios SET password = ${hash} WHERE id = ${idNum}`;
+  } else {
+    await sql`UPDATE usuarios SET nombre = ${nombreTrim} WHERE id = ${idNum}`;
+  }
   return NextResponse.json({ ok: true });
 }
 
