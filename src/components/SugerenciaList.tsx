@@ -23,7 +23,45 @@ const FIELD_LABELS: Record<string, string> = {
   marca_mes: "Marca (mes)",
   marca_anio: "Marca (año)",
   imagen: "Imagen",
+  criador_id: "Criador",
 };
+
+const GALLO_FIELD_MAP: Record<string, string> = {
+  placa: "gallo_placa",
+  candado: "gallo_candado",
+  color: "gallo_color",
+  libras: "gallo_libras",
+  onzas: "gallo_onzas",
+  cresta: "gallo_cresta",
+  patas: "gallo_patas",
+  pico: "gallo_pico",
+  mama: "gallo_mama",
+  papa: "gallo_papa",
+  marca_mes: "gallo_marca_mes",
+  marca_anio: "gallo_marca_anio",
+  imagen: "gallo_imagen",
+  criador_id: "gallo_criador",
+};
+
+function formatValue(key: string, val: unknown): string {
+  if (val == null || val === "") return "—";
+  if (key === "imagen") return val ? "Con imagen" : "Sin imagen";
+  return String(val);
+}
+
+function formatGalloValue(key: string, sug: Sugerencia): string {
+  const galloKey = GALLO_FIELD_MAP[key];
+  if (!galloKey) return "—";
+  const val = (sug as unknown as Record<string, unknown>)[galloKey];
+  if (key === "imagen") {
+    return val ? "Con imagen" : "Sin imagen";
+  }
+  return formatValue(key, val);
+}
+
+function valuesDiffer(key: string, actual: string, propuesto: string): boolean {
+  return actual !== propuesto;
+}
 
 export default function SugerenciaList({ sugerencias, isAdmin }: Props) {
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -114,26 +152,42 @@ export default function SugerenciaList({ sugerencias, isAdmin }: Props) {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-surface-container rounded-lg p-3">
+            <div className="flex flex-col gap-1.5 bg-surface-container rounded-lg p-3">
               {Object.entries(FIELD_LABELS).map(([key, label]) => {
                 if (!(key in payload)) return null;
-                const val = payload[key];
-                const display = val == null || val === ""
-                  ? "—"
-                  : key === "imagen"
-                    ? val ? "Con imagen" : "Sin imagen"
-                    : String(val);
+                const propuesto = formatValue(key, payload[key]);
+                const actual = formatGalloValue(key, s);
+                const changed = valuesDiffer(key, actual, propuesto);
+                if (!changed) return null;
                 return (
-                  <div key={key} className="flex flex-col">
+                  <div key={key} className="flex flex-col gap-0.5">
                     <span className="font-mono text-xs text-on-surface-variant uppercase tracking-wider">
                       {label}
                     </span>
-                    <span className="text-on-background text-sm truncate">
-                      {display}
-                    </span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-on-surface-variant line-through opacity-70">
+                        {actual}
+                      </span>
+                      <span className="material-symbols-outlined text-primary" style={{ fontSize: "16px" }}>
+                        arrow_forward
+                      </span>
+                      <span className="text-on-background font-medium">
+                        {propuesto}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
+              {Object.entries(FIELD_LABELS).every(([key]) => {
+                if (!(key in payload)) return true;
+                const propuesto = formatValue(key, payload[key]);
+                const actual = formatGalloValue(key, s);
+                return !valuesDiffer(key, actual, propuesto);
+              }) && (
+                <div className="text-sm text-on-surface-variant italic">
+                  Sin cambios detectados
+                </div>
+              )}
             </div>
 
             {isAdmin && s.estado === "pendiente" && (

@@ -84,6 +84,17 @@ export type Sugerencia = {
   gallo_placa: number | null;
   gallo_candado: number | null;
   gallo_color: string | null;
+  gallo_libras: number | null;
+  gallo_onzas: number | null;
+  gallo_cresta: string | null;
+  gallo_patas: string | null;
+  gallo_pico: string | null;
+  gallo_mama: string | null;
+  gallo_papa: string | null;
+  gallo_marca_mes: number | null;
+  gallo_marca_anio: number | null;
+  gallo_imagen: string | null;
+  gallo_criador: string | null;
 };
 
 export type Stats = {
