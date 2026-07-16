@@ -40,6 +40,7 @@ async function seedCatalog() {
   await sql`INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING`;
   await sql`INSERT INTO mamas (nombre) VALUES ('Desconocida') ON CONFLICT (nombre) DO NOTHING`;
   await sql`INSERT INTO papas (nombre) VALUES ('Desconocido') ON CONFLICT (nombre) DO NOTHING`;
+  await sql`INSERT INTO marcas (nombre) VALUES ('Desconocida') ON CONFLICT (nombre) DO NOTHING`;
   console.log("✓ Catálogos inicializados");
 }
 

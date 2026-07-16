@@ -18,6 +18,7 @@ type GalloBody = {
   pico?: string | null;
   mama?: string | null;
   papa?: string | null;
+  marca?: string | null;
 };
 
 function toIntOrNull(v: unknown): number | null {
@@ -58,7 +59,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
   const { rows } = await sql<GalloRow>`
     SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.mama, g.papa, g.creado_en,
+      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
     FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
     WHERE g.id = ${idNum}`;
@@ -98,6 +99,7 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   const pico = toTrimmedString(body.pico);
   const mama = toTrimmedString(body.mama);
   const papa = toTrimmedString(body.papa);
+  const marca = toTrimmedString(body.marca);
 
   if (placaVal === null && candadoVal === null) {
     return NextResponse.json(
@@ -146,7 +148,8 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
         patas = ${patas},
         pico = ${pico},
         mama = ${mama},
-        papa = ${papa}
+        papa = ${papa},
+        marca = ${marca}
       WHERE id = ${idNum}`;
 
     revalidatePath("/gallos");

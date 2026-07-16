@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa, Marca } from "@/lib/types";
 import InlineOptionAdd from "@/components/InlineOptionAdd";
 
 type Props = {
@@ -13,6 +13,7 @@ type FormState = {
   tipoId: "placa" | "candado";
   placa: string;
   candado: string;
+  usarSecundaria: boolean;
   criador_id: string;
   color: string;
   imagen: string | null;
@@ -23,6 +24,7 @@ type FormState = {
   pico: string;
   mama: string;
   papa: string;
+  marca: string;
 };
 
 type CatalogState = {
@@ -33,6 +35,7 @@ type CatalogState = {
   picos: Pico[];
   mamas: Mama[];
   papas: Papa[];
+  marcas: Marca[];
 };
 
 const EMPTY_CATALOG: CatalogState = {
@@ -43,6 +46,7 @@ const EMPTY_CATALOG: CatalogState = {
   picos: [],
   mamas: [],
   papas: [],
+  marcas: [],
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -51,10 +55,13 @@ const IMAGE_QUALITY = 0.82;
 
 const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undefined): FormState => {
   if (gallo) {
+    const tienePlaca = gallo.placa != null;
+    const tieneCandado = gallo.candado != null;
     return {
-      tipoId: gallo.placa != null ? "placa" : "candado",
-      placa: gallo.placa != null ? String(gallo.placa) : "",
-      candado: gallo.candado != null ? String(gallo.candado) : "",
+      tipoId: tienePlaca ? "placa" : "candado",
+      placa: tienePlaca ? String(gallo.placa) : "",
+      candado: tieneCandado ? String(gallo.candado) : "",
+      usarSecundaria: tienePlaca && tieneCandado,
       criador_id: gallo.criador_id ? String(gallo.criador_id) : "",
       color: gallo.color ?? "",
       imagen: gallo.imagen ?? null,
@@ -65,12 +72,14 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
       pico: gallo.pico ?? "",
       mama: gallo.mama ?? "",
       papa: gallo.papa ?? "",
+      marca: gallo.marca ?? "",
     };
   }
   return {
     tipoId: "placa",
     placa: "",
     candado: "",
+    usarSecundaria: false,
     criador_id: "",
     color: "",
     imagen: null,
@@ -81,6 +90,7 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
     pico: "",
     mama: "",
     papa: "",
+    marca: "",
   };
 };
 
@@ -146,8 +156,9 @@ export default function GalloForm({ gallo }: Props) {
       fetch("/api/picos").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/mamas").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/papas").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/marcas").then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([criadores, colores, crestas, patas, picos, mamas, papas]) => {
+      .then(([criadores, colores, crestas, patas, picos, mamas, papas, marcas]) => {
         if (cancelled) return;
         setCatalog({
           criadores: Array.isArray(criadores) ? criadores : [],
@@ -157,6 +168,7 @@ export default function GalloForm({ gallo }: Props) {
           picos: Array.isArray(picos) ? picos : [],
           mamas: Array.isArray(mamas) ? mamas : [],
           papas: Array.isArray(papas) ? papas : [],
+          marcas: Array.isArray(marcas) ? marcas : [],
         });
       })
       .catch(() => {
@@ -181,6 +193,15 @@ export default function GalloForm({ gallo }: Props) {
       return state.tipoId === "placa"
         ? "La placa es obligatoria y debe ser solo números"
         : "El candado es obligatorio y debe ser solo números";
+    }
+    if (state.usarSecundaria) {
+      const secValue = state.tipoId === "placa" ? state.candado : state.placa;
+      const trimmed = secValue.trim();
+      if (trimmed && !/^\d+$/.test(trimmed)) {
+        return state.tipoId === "placa"
+          ? "El candado secundario debe ser solo números"
+          : "La placa secundaria debe ser solo números";
+      }
     }
     if (!state.color.trim()) {
       return "El color es obligatorio";
@@ -243,9 +264,22 @@ export default function GalloForm({ gallo }: Props) {
 
     setSaving(true);
 
+    const placaValue =
+      form.tipoId === "placa"
+        ? Number(form.placa)
+        : form.usarSecundaria && form.placa.trim()
+          ? Number(form.placa)
+          : null;
+    const candadoValue =
+      form.tipoId === "candado"
+        ? Number(form.candado)
+        : form.usarSecundaria && form.candado.trim()
+          ? Number(form.candado)
+          : null;
+
     const payload = {
-      placa: form.tipoId === "placa" ? Number(form.placa) : null,
-      candado: form.tipoId === "candado" ? Number(form.candado) : null,
+      placa: placaValue,
+      candado: candadoValue,
       criador_id: form.criador_id ? Number(form.criador_id) : null,
       color: form.color.trim(),
       imagen: form.imagen,
@@ -256,6 +290,7 @@ export default function GalloForm({ gallo }: Props) {
       pico: form.pico.trim() || null,
       mama: form.mama.trim() || null,
       papa: form.papa.trim() || null,
+      marca: form.marca.trim() || null,
     };
 
     try {
@@ -376,6 +411,48 @@ export default function GalloForm({ gallo }: Props) {
             placeholder="Ej: 50"
             min={1}
           />
+        )}
+
+        <button
+          type="button"
+          onClick={() => update("usarSecundaria", !form.usarSecundaria)}
+          className="mt-2 flex items-center gap-1 text-sm text-primary hover:underline"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+            {form.usarSecundaria ? "remove" : "add"}
+          </span>
+          {form.usarSecundaria ? "Quitar llave secundaria" : "Agregar llave secundaria (opcional)"}
+        </button>
+
+        {form.usarSecundaria && (
+          <div className="mt-2">
+            <label className={labelClass}>
+              {form.tipoId === "placa" ? "Candado (opcional)" : "Placa (opcional)"}
+            </label>
+            {form.tipoId === "placa" ? (
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={form.candado}
+                onChange={(e) => update("candado", e.target.value)}
+                className={inputClass}
+                placeholder="Ej: 50"
+                min={1}
+              />
+            ) : (
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={form.placa}
+                onChange={(e) => update("placa", e.target.value)}
+                className={inputClass}
+                placeholder="Ej: 100"
+                min={1}
+              />
+            )}
+          </div>
         )}
       </div>
 
@@ -709,6 +786,38 @@ export default function GalloForm({ gallo }: Props) {
               ].sort((a, b) => a.nombre.localeCompare(b.nombre));
               setCatalog((prev) => ({ ...prev, picos: next }));
               update("pico", item.nombre);
+            }}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>Marca (opcional)</label>
+        <div className={selectWrapClass}>
+          <select
+            value={form.marca}
+            onChange={(e) => update("marca", e.target.value)}
+            className={selectClass}
+            disabled={catalogLoading}
+          >
+            <option value="">Seleccionar marca...</option>
+            {catalog.marcas.map((c) => (
+              <option key={c.id} value={c.nombre}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <InlineOptionAdd
+            apiPath="/api/marcas"
+            label="marca"
+            existingNames={catalog.marcas.map((c) => c.nombre)}
+            onCreated={(item) => {
+              const next = [
+                ...catalog.marcas,
+                { id: item.id, nombre: item.nombre, creado_en: "" },
+              ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+              setCatalog((prev) => ({ ...prev, marcas: next }));
+              update("marca", item.nombre);
             }}
           />
         </div>

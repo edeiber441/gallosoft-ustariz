@@ -62,6 +62,7 @@ export type GalloRow = {
   pico: string | null;
   mama: string | null;
   papa: string | null;
+  marca: string | null;
   creado_en: string;
   criador_id: number | null;
   criador_nombre: string | null;
