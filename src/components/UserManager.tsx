@@ -111,7 +111,7 @@ export default function UserManager() {
     <div className="flex flex-col gap-4">
       <form onSubmit={handleAdd} className="flex flex-col gap-2">
         <div>
-          <label className={labelClass}>Nombre del propietario</label>
+          <label className={labelClass}>Nombre del usuario</label>
           <input
             type="text"
             value={nombre}
@@ -175,7 +175,7 @@ export default function UserManager() {
                     type="text"
                     value={editNombre}
                     onChange={(e) => setEditNombre(e.target.value)}
-                    placeholder="Nombre del propietario"
+                    placeholder="Nombre del usuario"
                     className="bg-surface-container border border-primary rounded-lg px-3 py-2 text-on-background text-sm"
                     autoFocus
                   />
