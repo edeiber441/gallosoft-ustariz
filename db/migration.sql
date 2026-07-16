@@ -124,6 +124,23 @@ ALTER TABLE mamas ADD UNIQUE (nombre, usuario_id);
 ALTER TABLE papas ADD UNIQUE (nombre, usuario_id);
 
 -- ---------------------------------------------------------------------
+-- 3.5) Tabla de sugerencias de modificación
+-- ---------------------------------------------------------------------
+-- Los operadores que no pueden editar un gallo (>10 min o no es suyo)
+-- pueden enviar una sugerencia de modificación al admin para revisión.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS sugerencias (
+  id          SERIAL PRIMARY KEY,
+  gallo_id    INTEGER NOT NULL REFERENCES gallos(id) ON DELETE CASCADE,
+  usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  payload     JSONB NOT NULL,
+  estado      TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada', 'rechazada')),
+  revisado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  revisado_en TIMESTAMPTZ,
+  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------------
 -- 4) Índices para acelerar búsquedas
 -- ---------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_gallos_placa        ON gallos (placa)         WHERE placa IS NOT NULL;

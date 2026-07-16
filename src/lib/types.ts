@@ -70,6 +70,21 @@ export type Usuario = {
   creado_en: string;
 };
 
+export type Sugerencia = {
+  id: number;
+  gallo_id: number;
+  usuario_id: number;
+  usuario_nombre: string | null;
+  payload: Record<string, unknown>;
+  estado: "pendiente" | "aceptada" | "rechazada";
+  revisado_por: number | null;
+  revisado_en: string | null;
+  creado_en: string;
+  gallo_placa: number | null;
+  gallo_candado: number | null;
+  gallo_color: string | null;
+};
+
 export type Stats = {
   total: number;
   recientes: Array<{

@@ -9,6 +9,7 @@ type Props = {
   gallo?: import("@/lib/types").Gallo | null;
   canEdit?: boolean;
   canDelete?: boolean;
+  isOperator?: boolean;
 };
 
 type FormState = {
@@ -137,7 +138,7 @@ function compressImage(file: File): Promise<string> {
   });
 }
 
-export default function GalloForm({ gallo, canEdit = true, canDelete = true }: Props) {
+export default function GalloForm({ gallo, canEdit = true, canDelete = true, isOperator = false }: Props) {
   const [form, setForm] = useState<FormState>(() => initialStateFromGallo(gallo));
   const [catalog, setCatalog] = useState<CatalogState>(EMPTY_CATALOG);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -313,6 +314,25 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true }: P
     };
 
     try {
+      if (modoSugerencia && gallo) {
+        const res = await fetch("/api/sugerencias", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gallo_id: gallo.id, payload }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = (data as { error?: string }).error || `Error ${res.status}`;
+          setError(msg);
+          return;
+        }
+
+        router.push("/gallos");
+        router.refresh();
+        return;
+      }
+
       const url = gallo ? `/api/gallos/${gallo.id}` : "/api/gallos";
       const method = gallo ? "PUT" : "POST";
       const res = await fetch(url, {
@@ -371,6 +391,8 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true }: P
     "flex-1 bg-surface border border-outline-variant rounded-lg px-4 py-3 text-on-background text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none";
   const labelClass =
     "font-mono text-xs text-on-surface-variant uppercase tracking-wider mb-1 block";
+  const modoSugerencia = !!gallo && !canEdit && isOperator;
+
   const segActive = "bg-primary text-on-primary-container border-primary";
   const segInactive =
     "bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high";
@@ -853,7 +875,7 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true }: P
       </div>
 
       <div className="flex gap-3 mt-3">
-        {(!gallo || canEdit) && (
+        {(!gallo || canEdit || modoSugerencia) && (
           <button
             type="submit"
             disabled={saving || imageProcessing}
@@ -863,8 +885,8 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true }: P
               <span className="material-symbols-outlined animate-spin">progress_activity</span>
             ) : (
               <>
-                <span className="material-symbols-outlined">save</span>
-                {gallo ? "Actualizar" : "Registrar"}
+                <span className="material-symbols-outlined">{modoSugerencia ? "send" : "save"}</span>
+                {modoSugerencia ? "Enviar sugerencia" : gallo ? "Actualizar" : "Registrar"}
               </>
             )}
           </button>
@@ -879,9 +901,15 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true }: P
         </button>
       </div>
 
-      {gallo && !canEdit && (
+      {gallo && !canEdit && !modoSugerencia && (
         <div className="text-sm text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-4 py-3 text-center">
-          El plazo de 10 minutos para editar este gallo ha expirado. Solo el admin puede modificarlo.
+          Solo el admin puede modificar este gallo.
+        </div>
+      )}
+
+      {modoSugerencia && (
+        <div className="text-sm text-primary bg-primary-container/20 border border-primary/30 rounded-lg px-4 py-3 text-center">
+          No puedes editar directamente este gallo. Modifica los campos y envía una sugerencia al admin para revisión.
         </div>
       )}
 
