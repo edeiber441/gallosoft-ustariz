@@ -7,6 +7,8 @@ import InlineOptionAdd from "@/components/InlineOptionAdd";
 
 type Props = {
   gallo?: import("@/lib/types").Gallo | null;
+  canEdit?: boolean;
+  canDelete?: boolean;
 };
 
 type FormState = {
@@ -135,7 +137,7 @@ function compressImage(file: File): Promise<string> {
   });
 }
 
-export default function GalloForm({ gallo }: Props) {
+export default function GalloForm({ gallo, canEdit = true, canDelete = true }: Props) {
   const [form, setForm] = useState<FormState>(() => initialStateFromGallo(gallo));
   const [catalog, setCatalog] = useState<CatalogState>(EMPTY_CATALOG);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -624,6 +626,9 @@ export default function GalloForm({ gallo }: Props) {
                 {c.nombre}
               </option>
             ))}
+            {form.mama && !catalog.mamas.some((c) => c.nombre === form.mama) && (
+              <option value={form.mama}>{form.mama}</option>
+            )}
           </select>
           <InlineOptionAdd
             apiPath="/api/mamas"
@@ -632,7 +637,7 @@ export default function GalloForm({ gallo }: Props) {
             onCreated={(item) => {
               const next = [
                 ...catalog.mamas,
-                { id: item.id, nombre: item.nombre, creado_en: "" },
+                { id: item.id, nombre: item.nombre, usuario_id: null, creado_en: "" },
               ].sort((a, b) => a.nombre.localeCompare(b.nombre));
               setCatalog((prev) => ({ ...prev, mamas: next }));
               update("mama", item.nombre);
@@ -656,6 +661,9 @@ export default function GalloForm({ gallo }: Props) {
                 {c.nombre}
               </option>
             ))}
+            {form.papa && !catalog.papas.some((c) => c.nombre === form.papa) && (
+              <option value={form.papa}>{form.papa}</option>
+            )}
           </select>
           <InlineOptionAdd
             apiPath="/api/papas"
@@ -664,7 +672,7 @@ export default function GalloForm({ gallo }: Props) {
             onCreated={(item) => {
               const next = [
                 ...catalog.papas,
-                { id: item.id, nombre: item.nombre, creado_en: "" },
+                { id: item.id, nombre: item.nombre, usuario_id: null, creado_en: "" },
               ].sort((a, b) => a.nombre.localeCompare(b.nombre));
               setCatalog((prev) => ({ ...prev, papas: next }));
               update("papa", item.nombre);
@@ -845,20 +853,22 @@ export default function GalloForm({ gallo }: Props) {
       </div>
 
       <div className="flex gap-3 mt-3">
-        <button
-          type="submit"
-          disabled={saving || imageProcessing}
-          className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary-container rounded-lg px-4 py-3 font-headline font-semibold text-lg hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {saving ? (
-            <span className="material-symbols-outlined animate-spin">progress_activity</span>
-          ) : (
-            <>
-              <span className="material-symbols-outlined">save</span>
-              {gallo ? "Actualizar" : "Registrar"}
-            </>
-          )}
-        </button>
+        {(!gallo || canEdit) && (
+          <button
+            type="submit"
+            disabled={saving || imageProcessing}
+            className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary-container rounded-lg px-4 py-3 font-headline font-semibold text-lg hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <span className="material-symbols-outlined animate-spin">progress_activity</span>
+            ) : (
+              <>
+                <span className="material-symbols-outlined">save</span>
+                {gallo ? "Actualizar" : "Registrar"}
+              </>
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => router.back()}
@@ -869,7 +879,13 @@ export default function GalloForm({ gallo }: Props) {
         </button>
       </div>
 
-      {gallo && (
+      {gallo && !canEdit && (
+        <div className="text-sm text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-4 py-3 text-center">
+          El plazo de 10 minutos para editar este gallo ha expirado. Solo el admin puede modificarlo.
+        </div>
+      )}
+
+      {gallo && canDelete && (
         <button
           type="button"
           onClick={handleDelete}

@@ -9,7 +9,10 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { rows } = await sql`SELECT id, nombre, creado_en FROM papas ORDER BY nombre ASC`;
+  const { rows } = await sql`
+    SELECT id, nombre, usuario_id, creado_en FROM papas
+    WHERE usuario_id IS NULL OR usuario_id = ${session.id}
+    ORDER BY nombre ASC`;
   return NextResponse.json(rows);
 }
 
@@ -27,7 +30,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El nombre del papa es obligatorio" }, { status: 400 });
     }
 
-    const { rows } = await sql`INSERT INTO papas (nombre) VALUES (${nombre.trim()}) RETURNING id, nombre`;
+    const { rows } = await sql<{ id: number; nombre: string }>`
+      INSERT INTO papas (nombre, usuario_id)
+      VALUES (${nombre.trim()}, ${session.id})
+      RETURNING id, nombre
+    `;
     revalidatePath("/criadores");
     return NextResponse.json(rows[0]);
   } catch (err) {

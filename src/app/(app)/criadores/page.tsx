@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import ConfigManager from "@/components/ConfigManager";
 import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 
@@ -29,17 +30,27 @@ async function getPicos(): Promise<Pico[]> {
   return rows as Pico[];
 }
 
-async function getMamas(): Promise<Mama[]> {
-  const { rows } = await sql`SELECT id, nombre, creado_en FROM mamas ORDER BY nombre ASC`;
+async function getMamas(usuarioId: number): Promise<Mama[]> {
+  const { rows } = await sql`
+    SELECT id, nombre, usuario_id, creado_en FROM mamas
+    WHERE usuario_id IS NULL OR usuario_id = ${usuarioId}
+    ORDER BY nombre ASC`;
   return rows as Mama[];
 }
 
-async function getPapas(): Promise<Papa[]> {
-  const { rows } = await sql`SELECT id, nombre, creado_en FROM papas ORDER BY nombre ASC`;
+async function getPapas(usuarioId: number): Promise<Papa[]> {
+  const { rows } = await sql`
+    SELECT id, nombre, usuario_id, creado_en FROM papas
+    WHERE usuario_id IS NULL OR usuario_id = ${usuarioId}
+    ORDER BY nombre ASC`;
   return rows as Papa[];
 }
 
 export default async function ConfigPage() {
+  const session = await getSession();
+  const usuarioId = session?.id ?? 0;
+  const isAdmin = session?.rango === "admin";
+
   let criadores: Criador[] = [];
   let colores: Color[] = [];
   let crestas: Cresta[] = [];
@@ -54,8 +65,8 @@ export default async function ConfigPage() {
       getCrestas(),
       getPatas(),
       getPicos(),
-      getMamas(),
-      getPapas(),
+      getMamas(usuarioId),
+      getPapas(usuarioId),
     ]);
   } catch {
     criadores = [];
@@ -80,6 +91,7 @@ export default async function ConfigPage() {
         initialPicos={picos}
         initialMamas={mamas}
         initialPapas={papas}
+        isAdmin={isAdmin}
       />
     </>
   );

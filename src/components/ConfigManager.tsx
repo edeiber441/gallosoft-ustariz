@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
+import UserManager from "@/components/UserManager";
 
 type Props = {
   initialCriadores: Criador[];
@@ -11,11 +12,12 @@ type Props = {
   initialPicos: Pico[];
   initialMamas: Mama[];
   initialPapas: Papa[];
+  isAdmin: boolean;
 };
 
-type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos" | "mamas" | "papas";
+type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos" | "mamas" | "papas" | "usuarios";
 
-export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos, initialMamas, initialPapas }: Props) {
+export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos, initialMamas, initialPapas, isAdmin }: Props) {
   const [tab, setTab] = useState<TabKey>("criadores");
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -26,9 +28,10 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
     { key: "picos", label: "Picos" },
     { key: "mamas", label: "Mamas" },
     { key: "papas", label: "Papas" },
+    ...(isAdmin ? [{ key: "usuarios" as TabKey, label: "Usuarios" }] : []),
   ];
 
-  const config: Record<TabKey, { items: { id: number; nombre: string }[]; apiPath: string; placeholder: string; emptyText: string; addError: string }> = {
+  const config: Record<Exclude<TabKey, "usuarios">, { items: { id: number; nombre: string }[]; apiPath: string; placeholder: string; emptyText: string; addError: string }> = {
     criadores: { items: initialCriadores, apiPath: "/api/criadores", placeholder: "Nombre del criador", emptyText: "No hay criadores registrados.", addError: "El criador ya existe" },
     colores: { items: initialColores, apiPath: "/api/colores", placeholder: "Nombre del color", emptyText: "No hay colores registrados.", addError: "El color ya existe" },
     crestas: { items: initialCrestas, apiPath: "/api/crestas", placeholder: "Nombre de la cresta", emptyText: "No hay crestas registradas.", addError: "La cresta ya existe" },
@@ -38,11 +41,11 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
     papas: { items: initialPapas, apiPath: "/api/papas", placeholder: "Nombre del papa", emptyText: "No hay papas registrados.", addError: "El papa ya existe" },
   };
 
-  const current = config[tab];
+  const current = tab === "usuarios" ? null : config[tab as Exclude<TabKey, "usuarios">];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+      <div className={`grid gap-1.5 ${isAdmin ? "grid-cols-4 sm:grid-cols-8" : "grid-cols-4 sm:grid-cols-7"}`}>
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -58,13 +61,17 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
         ))}
       </div>
 
-      <ItemList
-        items={current.items}
-        apiPath={current.apiPath}
-        placeholder={current.placeholder}
-        emptyText={current.emptyText}
-        addError={current.addError}
-      />
+      {tab === "usuarios" && isAdmin ? (
+        <UserManager />
+      ) : current ? (
+        <ItemList
+          items={current.items}
+          apiPath={current.apiPath}
+          placeholder={current.placeholder}
+          emptyText={current.emptyText}
+          addError={current.addError}
+        />
+      ) : null}
     </div>
   );
 }

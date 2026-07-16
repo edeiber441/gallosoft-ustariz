@@ -59,15 +59,19 @@ CREATE TABLE IF NOT EXISTS picos (
 );
 
 CREATE TABLE IF NOT EXISTS mamas (
-  id        SERIAL PRIMARY KEY,
-  nombre    TEXT NOT NULL UNIQUE,
-  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+  id          SERIAL PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (nombre, usuario_id)
 );
 
 CREATE TABLE IF NOT EXISTS papas (
-  id        SERIAL PRIMARY KEY,
-  nombre    TEXT NOT NULL UNIQUE,
-  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+  id          SERIAL PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (nombre, usuario_id)
 );
 
 -- ---------------------------------------------------------------------
@@ -105,6 +109,19 @@ ALTER TABLE gallos ADD COLUMN IF NOT EXISTS papa TEXT;
 ALTER TABLE gallos ADD COLUMN IF NOT EXISTS marca_mes SMALLINT;
 ALTER TABLE gallos ADD COLUMN IF NOT EXISTS marca_anio INTEGER;
 ALTER TABLE gallos DROP COLUMN IF EXISTS marca;
+
+-- Scoping de mamas/papas por usuario. Idempotente.
+ALTER TABLE mamas ADD COLUMN IF NOT EXISTS usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE;
+ALTER TABLE papas ADD COLUMN IF NOT EXISTS usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE;
+-- El constraint UNIQUE (nombre) original impide que dos usuarios tengan la
+-- misma mama. Lo reemplazamos por UNIQUE (nombre, usuario_id) para permitir
+-- duplicados entre usuarios distintos.
+ALTER TABLE mamas DROP CONSTRAINT IF EXISTS mamas_nombre_key;
+ALTER TABLE papas DROP CONSTRAINT IF EXISTS papas_nombre_key;
+ALTER TABLE mamas DROP CONSTRAINT IF EXISTS mamas_nombre_usuario_id_key;
+ALTER TABLE papas DROP CONSTRAINT IF EXISTS papas_nombre_usuario_id_key;
+ALTER TABLE mamas ADD UNIQUE (nombre, usuario_id);
+ALTER TABLE papas ADD UNIQUE (nombre, usuario_id);
 
 -- ---------------------------------------------------------------------
 -- 4) Índices para acelerar búsquedas
@@ -153,12 +170,12 @@ INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- Mamas
-INSERT INTO mamas (nombre) VALUES ('Desconocida')
-ON CONFLICT (nombre) DO NOTHING;
+INSERT INTO mamas (nombre, usuario_id) VALUES ('Desconocida', NULL)
+ON CONFLICT (nombre, usuario_id) DO NOTHING;
 
 -- Papas
-INSERT INTO papas (nombre) VALUES ('Desconocido')
-ON CONFLICT (nombre) DO NOTHING;
+INSERT INTO papas (nombre, usuario_id) VALUES ('Desconocido', NULL)
+ON CONFLICT (nombre, usuario_id) DO NOTHING;
 
 -- =====================================================================
 -- FIN DE LA MIGRACIÓN

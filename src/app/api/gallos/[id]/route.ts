@@ -84,6 +84,24 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
+  // Verificar permisos: admin siempre, operador solo si es el creador y <10 min
+  if (session.rango !== "admin") {
+    const { rows: galloRows } = await sql<{ creado_por: number | null; creado_en: string }>`
+      SELECT creado_por, creado_en FROM gallos WHERE id = ${idNum}`;
+    if (galloRows.length === 0) {
+      return NextResponse.json({ error: "Gallo no encontrado" }, { status: 404 });
+    }
+    const gallo = galloRows[0];
+    if (gallo.creado_por !== session.id) {
+      return NextResponse.json({ error: "No tienes permiso para editar este gallo" }, { status: 403 });
+    }
+    const creadoMs = new Date(gallo.creado_en).getTime();
+    const diffMin = (Date.now() - creadoMs) / 60000;
+    if (diffMin > 10) {
+      return NextResponse.json({ error: "El plazo de 10 minutos para editar este gallo ha expirado" }, { status: 403 });
+    }
+  }
+
   let body: GalloBody;
   try {
     body = (await request.json()) as GalloBody;
@@ -199,6 +217,9 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+  if (session.rango !== "admin") {
+    return NextResponse.json({ error: "Solo el admin puede eliminar gallos" }, { status: 403 });
   }
 
   const { id } = await ctx.params;

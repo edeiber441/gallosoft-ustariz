@@ -14,6 +14,7 @@ export type Gallo = {
   marca_mes: number | null;
   marca_anio: number | null;
   creado_en: string;
+  creado_por: number | null;
   criador_id: number | null;
   criador_nombre: string | null;
 };
@@ -51,12 +52,21 @@ export type Pico = {
 export type Mama = {
   id: number;
   nombre: string;
+  usuario_id: number | null;
   creado_en: string;
 };
 
 export type Papa = {
   id: number;
   nombre: string;
+  usuario_id: number | null;
+  creado_en: string;
+};
+
+export type Usuario = {
+  id: number;
+  username: string;
+  rango: string;
   creado_en: string;
 };
 

@@ -38,8 +38,8 @@ async function seedCatalog() {
   await sql`INSERT INTO crestas (nombre) VALUES ('Simple'), ('Nuez') ON CONFLICT (nombre) DO NOTHING`;
   await sql`INSERT INTO patas (nombre) VALUES ('Verdes'), ('Amarillas') ON CONFLICT (nombre) DO NOTHING`;
   await sql`INSERT INTO picos (nombre) VALUES ('Curvo corto'), ('Recto') ON CONFLICT (nombre) DO NOTHING`;
-  await sql`INSERT INTO mamas (nombre) VALUES ('Desconocida') ON CONFLICT (nombre) DO NOTHING`;
-  await sql`INSERT INTO papas (nombre) VALUES ('Desconocido') ON CONFLICT (nombre) DO NOTHING`;
+  await sql`INSERT INTO mamas (nombre, usuario_id) VALUES ('Desconocida', NULL) ON CONFLICT (nombre, usuario_id) DO NOTHING`;
+  await sql`INSERT INTO papas (nombre, usuario_id) VALUES ('Desconocido', NULL) ON CONFLICT (nombre, usuario_id) DO NOTHING`;
   console.log("✓ Catálogos inicializados");
 }
 
