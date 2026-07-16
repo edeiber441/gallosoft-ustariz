@@ -35,7 +35,7 @@ export default async function EditarGalloPage({
   // Permisos: admin siempre puede editar/eliminar.
   // Operador: puede editar solo si es el creador y <10 min desde creado_en.
   const isAdmin = session?.rango === "admin";
-  const isOperator = session?.rango === "operador";
+  const isOperator = session?.rango === "gallero";
   const esCreador = gallo.creado_por != null && session?.id === gallo.creado_por;
   const diffMin = (new Date().getTime() - new Date(gallo.creado_en).getTime()) / 60000;
   const canEdit = isAdmin || (esCreador && diffMin <= 10);

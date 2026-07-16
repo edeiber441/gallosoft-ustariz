@@ -1,12 +1,22 @@
 import Link from "next/link";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import UserMenu from "@/components/UserMenu";
 
 export default async function TopNav() {
   const session = await getSession();
   const isAdmin = session?.rango === "admin";
 
   let pendientes = 0;
+  let userNombre: string | null = null;
+  if (session) {
+    try {
+      const { rows } = await sql<{ nombre: string | null }>`SELECT nombre FROM usuarios WHERE id = ${session.id}`;
+      userNombre = rows[0]?.nombre ?? null;
+    } catch {
+      userNombre = null;
+    }
+  }
   if (isAdmin) {
     try {
       const { rows } = await sql`SELECT COUNT(*)::int AS count FROM sugerencias WHERE estado = 'pendiente'`;
@@ -48,6 +58,9 @@ export default async function TopNav() {
         >
           <span className="material-symbols-outlined">settings</span>
         </Link>
+        {session && (
+          <UserMenu nombre={userNombre} username={session.username} rango={session.rango} />
+        )}
       </div>
     </nav>
   );

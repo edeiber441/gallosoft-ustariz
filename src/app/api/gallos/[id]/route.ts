@@ -84,7 +84,7 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
-  // Verificar permisos: admin siempre, operador solo si es el creador y <10 min
+  // Verificar permisos: admin siempre, gallero solo si es el creador y <10 min
   if (session.rango !== "admin") {
     const { rows: galloRows } = await sql<{ creado_por: number | null; creado_en: string }>`
       SELECT creado_por, creado_en FROM gallos WHERE id = ${idNum}`;

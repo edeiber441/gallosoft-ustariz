@@ -22,9 +22,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
   username    TEXT NOT NULL UNIQUE,
   nombre      TEXT,
   password    TEXT NOT NULL,
-  rango       TEXT NOT NULL DEFAULT 'admin' CHECK (rango IN ('admin', 'operador')),
+  rango       TEXT NOT NULL DEFAULT 'admin' CHECK (rango IN ('admin', 'gallero', 'operador')),
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Renombrar rango 'operador' a 'gallero' en usuarios existentes. Idempotente.
+UPDATE usuarios SET rango = 'gallero' WHERE rango = 'operador';
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rango_check;
+ALTER TABLE usuarios ADD CONSTRAINT usuarios_rango_check CHECK (rango IN ('admin', 'gallero'));
 
 -- Nombre del propietario (aparte de la cédula/username). Idempotente.
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nombre TEXT;

@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
 
     const { rows } = await sql<{ id: number; username: string }>`
       INSERT INTO usuarios (username, nombre, password, rango)
-      VALUES (${cedulaTrim}, ${nombreTrim}, ${hash}, 'operador')
+      VALUES (${cedulaTrim}, ${nombreTrim}, ${hash}, 'gallero')
       RETURNING id, username
     `;
-    return NextResponse.json({ id: rows[0].id, username: rows[0].username, nombre: nombreTrim, rango: "operador" });
+    return NextResponse.json({ id: rows[0].id, username: rows[0].username, nombre: nombreTrim, rango: "gallero" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
     if (msg.includes("unique") || msg.includes("duplicate")) {

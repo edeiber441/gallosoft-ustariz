@@ -212,7 +212,7 @@ export default function UserManager() {
                   <span className="text-on-surface-variant text-xs font-mono">
                     C.C. {u.username}
                     <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${u.rango === "admin" ? "bg-primary/20 text-primary" : "bg-surface-container-highest text-on-surface-variant"}`}>
-                      {u.rango}
+                      {u.rango === "admin" ? "Admin" : "Gallero"}
                     </span>
                   </span>
                 </div>
