@@ -48,7 +48,7 @@ const EMPTY_CATALOG: CatalogState = {
   papas: [],
 };
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const MAX_IMAGE_DIM = 1024;
 const IMAGE_QUALITY = 0.82;
 
@@ -539,7 +539,7 @@ export default function GalloForm({ gallo }: Props) {
       </div>
 
       <div>
-        <label className={labelClass}>Imagen (opcional, máx. 5MB)</label>
+        <label className={labelClass}>Imagen (opcional, máx. 20MB)</label>
         <div className="flex flex-col items-center gap-3">
           {form.imagen ? (
             <div className="relative w-full max-w-[200px] aspect-square rounded-lg overflow-hidden border border-outline-variant bg-surface-container">

@@ -42,7 +42,7 @@ function toTrimmedString(v: unknown): string | null {
 }
 
 function isValidImageDataUrl(v: string): boolean {
-  if (v.length > 5 * 1024 * 1024) return false;
+  if (v.length > 20 * 1024 * 1024) return false;
   return /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
 }
 
@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   } else if (typeof imagenRaw === "string" && imagenRaw.length > 0) {
     if (!isValidImageDataUrl(imagenRaw)) {
       return NextResponse.json(
-        { error: "La imagen debe ser un data URL JPEG/PNG/WebP válido (máx. 5MB)" },
+        { error: "La imagen debe ser un data URL JPEG/PNG/WebP válido (máx. 20MB)" },
         { status: 400 }
       );
     }
