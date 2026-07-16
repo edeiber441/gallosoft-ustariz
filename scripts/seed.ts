@@ -48,7 +48,7 @@ async function ensureSchema() {
   const statements = migration
     .split(/;\s*$/m)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("--"));
+    .filter((s) => s.length > 0);
 
   for (const stmt of statements) {
     const trimmed = stmt.replace(/^--.*$/gm, "").trim();
