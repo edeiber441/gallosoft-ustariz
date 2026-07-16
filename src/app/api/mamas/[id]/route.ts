@@ -19,8 +19,19 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "El nombre de la mama es obligatorio" }, { status: 400 });
   }
 
-  await sql`UPDATE mamas SET nombre = ${nombre.trim()} WHERE id = ${parseInt(id)}`;
+  const nuevoNombre = nombre.trim();
+  const { rows } = await sql<{ nombre: string }>`SELECT nombre FROM mamas WHERE id = ${parseInt(id)}`;
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "La mama no existe" }, { status: 404 });
+  }
+  const nombreViejo = rows[0].nombre;
+
+  await sql`UPDATE mamas SET nombre = ${nuevoNombre} WHERE id = ${parseInt(id)}`;
+  if (nombreViejo !== nuevoNombre) {
+    await sql`UPDATE gallos SET mama = ${nuevoNombre} WHERE mama = ${nombreViejo}`;
+  }
   revalidatePath("/criadores");
+  revalidatePath("/gallos");
   return NextResponse.json({ ok: true });
 }
 
