@@ -10,7 +10,7 @@ async function getGallos(searchParams: { placa?: string; candado?: string; criad
 
   if (placa) {
     const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.placa = ${parseInt(placa)} ORDER BY g.creado_en DESC`;
@@ -19,7 +19,7 @@ async function getGallos(searchParams: { placa?: string; candado?: string; criad
 
   if (candado) {
     const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.candado = ${parseInt(candado)} ORDER BY g.creado_en DESC`;
@@ -28,7 +28,7 @@ async function getGallos(searchParams: { placa?: string; candado?: string; criad
 
   if (criador_id) {
     const { rows } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE c.id = ${parseInt(criador_id)} ORDER BY g.creado_en DESC`;

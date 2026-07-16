@@ -18,7 +18,8 @@ type GalloBody = {
   pico?: string | null;
   mama?: string | null;
   papa?: string | null;
-  marca?: string | null;
+  marca_mes?: number | string | null;
+  marca_anio?: number | string | null;
 };
 
 function toIntOrNull(v: unknown): number | null {
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
   if (placa !== null) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.placa = ${placa} ORDER BY g.creado_en DESC NULLS LAST`;
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
   if (candado !== null) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.candado = ${candado} ORDER BY g.creado_en DESC`;
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
   if (criadorId !== null) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.criador_id = ${criadorId} ORDER BY g.creado_en DESC`;
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
   if (criador) {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE c.nombre ILIKE ${"%" + criador + "%"} ORDER BY g.creado_en DESC`;
@@ -128,7 +129,8 @@ export async function POST(request: NextRequest) {
   const pico = toTrimmedString(body.pico);
   const mama = toTrimmedString(body.mama);
   const papa = toTrimmedString(body.papa);
-  const marca = toTrimmedString(body.marca);
+  const marcaMesVal = toIntOrNull(body.marca_mes);
+  const marcaAnioVal = toIntOrNull(body.marca_anio);
 
   if (placaVal === null && candadoVal === null) {
     return NextResponse.json(
@@ -141,6 +143,20 @@ export async function POST(request: NextRequest) {
   }
   if (color.length > 80) {
     return NextResponse.json({ error: "El color es demasiado largo" }, { status: 400 });
+  }
+
+  // Validación de marca (mes 1-12, año 2000-2100). Ambos o ninguno.
+  if ((marcaMesVal === null) !== (marcaAnioVal === null)) {
+    return NextResponse.json(
+      { error: "La marca debe tener mes y año completos, o ambos vacíos" },
+      { status: 400 }
+    );
+  }
+  if (marcaMesVal !== null && (marcaMesVal < 1 || marcaMesVal > 12)) {
+    return NextResponse.json({ error: "El mes de la marca debe estar entre 1 y 12" }, { status: 400 });
+  }
+  if (marcaAnioVal !== null && (marcaAnioVal < 2000 || marcaAnioVal > 2100)) {
+    return NextResponse.json({ error: "El año de la marca debe estar entre 2000 y 2100" }, { status: 400 });
   }
 
   const librasNum = toIntOrNull(body.libras);
@@ -168,11 +184,11 @@ export async function POST(request: NextRequest) {
     const { rows } = await sql<GalloRow>`
       INSERT INTO gallos (
         placa, candado, criador_id, color, imagen,
-        libras, onzas, cresta, patas, pico, mama, papa, marca, creado_por
+        libras, onzas, cresta, patas, pico, mama, papa, marca_mes, marca_anio, creado_por
       )
       VALUES (
         ${placaVal}, ${candadoVal}, ${criadorIdVal}, ${color}, ${imagen},
-        ${librasNum}, ${onzasNum}, ${cresta}, ${patas}, ${pico}, ${mama}, ${papa}, ${marca}, ${session.id}
+        ${librasNum}, ${onzasNum}, ${cresta}, ${patas}, ${pico}, ${mama}, ${papa}, ${marcaMesVal}, ${marcaAnioVal}, ${session.id}
       )
       RETURNING id, placa, candado, color, libras, onzas
     `;

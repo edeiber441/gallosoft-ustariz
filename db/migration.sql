@@ -70,12 +70,6 @@ CREATE TABLE IF NOT EXISTS papas (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS marcas (
-  id        SERIAL PRIMARY KEY,
-  nombre    TEXT NOT NULL UNIQUE,
-  creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
 -- ---------------------------------------------------------------------
 -- 3) Tabla principal de gallos
 -- ---------------------------------------------------------------------
@@ -106,9 +100,11 @@ CREATE TABLE IF NOT EXISTS gallos (
 ALTER TABLE gallos ADD COLUMN IF NOT EXISTS mama TEXT;
 ALTER TABLE gallos ADD COLUMN IF NOT EXISTS papa TEXT;
 
--- Marca del gallo — opcional. Idempotente por si la tabla gallos ya existía
--- sin esta columna.
-ALTER TABLE gallos ADD COLUMN IF NOT EXISTS marca TEXT;
+-- Marca del gallo — opcional, compuesta por mes (1-12) y año. Idempotente
+-- por si la tabla gallos ya existía sin estas columnas.
+ALTER TABLE gallos ADD COLUMN IF NOT EXISTS marca_mes SMALLINT;
+ALTER TABLE gallos ADD COLUMN IF NOT EXISTS marca_anio INTEGER;
+ALTER TABLE gallos DROP COLUMN IF EXISTS marca;
 
 -- ---------------------------------------------------------------------
 -- 4) Índices para acelerar búsquedas
@@ -162,10 +158,6 @@ ON CONFLICT (nombre) DO NOTHING;
 
 -- Papas
 INSERT INTO papas (nombre) VALUES ('Desconocido')
-ON CONFLICT (nombre) DO NOTHING;
-
--- Marcas
-INSERT INTO marcas (nombre) VALUES ('Desconocida')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- =====================================================================

@@ -18,7 +18,8 @@ type GalloBody = {
   pico?: string | null;
   mama?: string | null;
   papa?: string | null;
-  marca?: string | null;
+  marca_mes?: number | string | null;
+  marca_anio?: number | string | null;
 };
 
 function toIntOrNull(v: unknown): number | null {
@@ -59,7 +60,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
   const { rows } = await sql<GalloRow>`
     SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+      g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
       c.id AS criador_id, c.nombre AS criador_nombre
     FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
     WHERE g.id = ${idNum}`;
@@ -99,7 +100,8 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   const pico = toTrimmedString(body.pico);
   const mama = toTrimmedString(body.mama);
   const papa = toTrimmedString(body.papa);
-  const marca = toTrimmedString(body.marca);
+  const marcaMesVal = toIntOrNull(body.marca_mes);
+  const marcaAnioVal = toIntOrNull(body.marca_anio);
 
   if (placaVal === null && candadoVal === null) {
     return NextResponse.json(
@@ -109,6 +111,19 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   }
   if (!color) {
     return NextResponse.json({ error: "El color es obligatorio" }, { status: 400 });
+  }
+
+  if ((marcaMesVal === null) !== (marcaAnioVal === null)) {
+    return NextResponse.json(
+      { error: "La marca debe tener mes y año completos, o ambos vacíos" },
+      { status: 400 }
+    );
+  }
+  if (marcaMesVal !== null && (marcaMesVal < 1 || marcaMesVal > 12)) {
+    return NextResponse.json({ error: "El mes de la marca debe estar entre 1 y 12" }, { status: 400 });
+  }
+  if (marcaAnioVal !== null && (marcaAnioVal < 2000 || marcaAnioVal > 2100)) {
+    return NextResponse.json({ error: "El año de la marca debe estar entre 2000 y 2100" }, { status: 400 });
   }
 
   const librasNum = toIntOrNull(body.libras);
@@ -149,7 +164,8 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
         pico = ${pico},
         mama = ${mama},
         papa = ${papa},
-        marca = ${marca}
+        marca_mes = ${marcaMesVal},
+        marca_anio = ${marcaAnioVal}
       WHERE id = ${idNum}`;
 
     revalidatePath("/gallos");

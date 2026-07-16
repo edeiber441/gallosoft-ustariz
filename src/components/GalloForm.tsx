@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa, Marca } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 import InlineOptionAdd from "@/components/InlineOptionAdd";
 
 type Props = {
@@ -24,7 +24,8 @@ type FormState = {
   pico: string;
   mama: string;
   papa: string;
-  marca: string;
+  marca_mes: string;
+  marca_anio: string;
 };
 
 type CatalogState = {
@@ -35,7 +36,6 @@ type CatalogState = {
   picos: Pico[];
   mamas: Mama[];
   papas: Papa[];
-  marcas: Marca[];
 };
 
 const EMPTY_CATALOG: CatalogState = {
@@ -46,7 +46,6 @@ const EMPTY_CATALOG: CatalogState = {
   picos: [],
   mamas: [],
   papas: [],
-  marcas: [],
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -72,7 +71,8 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
       pico: gallo.pico ?? "",
       mama: gallo.mama ?? "",
       papa: gallo.papa ?? "",
-      marca: gallo.marca ?? "",
+      marca_mes: gallo.marca_mes != null ? String(gallo.marca_mes) : "",
+      marca_anio: gallo.marca_anio != null ? String(gallo.marca_anio) : "",
     };
   }
   return {
@@ -90,7 +90,8 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
     pico: "",
     mama: "",
     papa: "",
-    marca: "",
+    marca_mes: "",
+    marca_anio: "",
   };
 };
 
@@ -156,9 +157,8 @@ export default function GalloForm({ gallo }: Props) {
       fetch("/api/picos").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/mamas").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/papas").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/marcas").then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([criadores, colores, crestas, patas, picos, mamas, papas, marcas]) => {
+      .then(([criadores, colores, crestas, patas, picos, mamas, papas]) => {
         if (cancelled) return;
         setCatalog({
           criadores: Array.isArray(criadores) ? criadores : [],
@@ -168,7 +168,6 @@ export default function GalloForm({ gallo }: Props) {
           picos: Array.isArray(picos) ? picos : [],
           mamas: Array.isArray(mamas) ? mamas : [],
           papas: Array.isArray(papas) ? papas : [],
-          marcas: Array.isArray(marcas) ? marcas : [],
         });
       })
       .catch(() => {
@@ -205,6 +204,20 @@ export default function GalloForm({ gallo }: Props) {
     }
     if (!state.color.trim()) {
       return "El color es obligatorio";
+    }
+    // Marca: ambos vacíos o ambos llenos; mes 1-12, año 2000-2100.
+    const mesTrim = state.marca_mes.trim();
+    const anioTrim = state.marca_anio.trim();
+    if ((mesTrim.length > 0) !== (anioTrim.length > 0)) {
+      return "La marca debe tener mes y año completos, o ambos vacíos";
+    }
+    if (mesTrim) {
+      if (!/^\d+$/.test(mesTrim)) return "El mes de la marca debe ser un número";
+      const m = Number(mesTrim);
+      if (m < 1 || m > 12) return "El mes de la marca debe estar entre 1 y 12";
+      if (!/^\d+$/.test(anioTrim)) return "El año de la marca debe ser un número";
+      const a = Number(anioTrim);
+      if (a < 2000 || a > 2100) return "El año de la marca debe estar entre 2000 y 2100";
     }
     const libras = Number(state.libras);
     if (!Number.isInteger(libras) || libras < 1 || libras > 6) {
@@ -277,6 +290,9 @@ export default function GalloForm({ gallo }: Props) {
           ? Number(form.candado)
           : null;
 
+    const marcaMes = form.marca_mes.trim();
+    const marcaAnio = form.marca_anio.trim();
+
     const payload = {
       placa: placaValue,
       candado: candadoValue,
@@ -290,7 +306,8 @@ export default function GalloForm({ gallo }: Props) {
       pico: form.pico.trim() || null,
       mama: form.mama.trim() || null,
       papa: form.papa.trim() || null,
-      marca: form.marca.trim() || null,
+      marca_mes: marcaMes ? Number(marcaMes) : null,
+      marca_anio: marcaAnio ? Number(marcaAnio) : null,
     };
 
     try {
@@ -792,33 +809,37 @@ export default function GalloForm({ gallo }: Props) {
       </div>
 
       <div>
-        <label className={labelClass}>Marca (opcional)</label>
-        <div className={selectWrapClass}>
-          <select
-            value={form.marca}
-            onChange={(e) => update("marca", e.target.value)}
-            className={selectClass}
-            disabled={catalogLoading}
-          >
-            <option value="">Seleccionar marca...</option>
-            {catalog.marcas.map((c) => (
-              <option key={c.id} value={c.nombre}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-          <InlineOptionAdd
-            apiPath="/api/marcas"
-            label="marca"
-            existingNames={catalog.marcas.map((c) => c.nombre)}
-            onCreated={(item) => {
-              const next = [
-                ...catalog.marcas,
-                { id: item.id, nombre: item.nombre, creado_en: "" },
-              ].sort((a, b) => a.nombre.localeCompare(b.nombre));
-              setCatalog((prev) => ({ ...prev, marcas: next }));
-              update("marca", item.nombre);
+        <label className={labelClass}>Marca (opcional, mes y año)</label>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={12}
+            value={form.marca_mes}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "" || (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 12)) {
+                update("marca_mes", v);
+              }
             }}
+            className={inputClass}
+            placeholder="Mes 1-12"
+          />
+          <input
+            type="number"
+            inputMode="numeric"
+            min={2000}
+            max={2100}
+            value={form.marca_anio}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "" || /^\d+$/.test(v)) {
+                update("marca_anio", v);
+              }
+            }}
+            className={inputClass}
+            placeholder="Año 2000-2100"
           />
         </div>
       </div>

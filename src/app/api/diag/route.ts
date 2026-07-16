@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.placa = ${placa} ORDER BY g.creado_en DESC`;
@@ -31,7 +31,7 @@ export async function GET() {
   try {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       ORDER BY g.creado_en DESC`;
@@ -44,7 +44,7 @@ export async function GET() {
   try {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g.creado_en,
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g.creado_en,
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.placa = 888 ORDER BY g.creado_en DESC`;
@@ -57,7 +57,7 @@ export async function GET() {
   try {
     const { rows } = await sql<GalloRow>`
       SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca, g."creado_en",
+        g.cresta, g.patas, g.pico, g.mama, g.papa, g.marca_mes, g.marca_anio, g."creado_en",
         c.id AS criador_id, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       WHERE g.placa = ${placa} ORDER BY g."creado_en" DESC`;

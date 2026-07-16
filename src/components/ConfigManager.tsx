@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa, Marca } from "@/lib/types";
+import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 
 type Props = {
   initialCriadores: Criador[];
@@ -11,12 +11,11 @@ type Props = {
   initialPicos: Pico[];
   initialMamas: Mama[];
   initialPapas: Papa[];
-  initialMarcas: Marca[];
 };
 
-type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos" | "mamas" | "papas" | "marcas";
+type TabKey = "criadores" | "colores" | "crestas" | "patas" | "picos" | "mamas" | "papas";
 
-export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos, initialMamas, initialPapas, initialMarcas }: Props) {
+export default function ConfigManager({ initialCriadores, initialColores, initialCrestas, initialPatas, initialPicos, initialMamas, initialPapas }: Props) {
   const [tab, setTab] = useState<TabKey>("criadores");
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -27,7 +26,6 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
     { key: "picos", label: "Picos" },
     { key: "mamas", label: "Mamas" },
     { key: "papas", label: "Papas" },
-    { key: "marcas", label: "Marcas" },
   ];
 
   const config: Record<TabKey, { items: { id: number; nombre: string }[]; apiPath: string; placeholder: string; emptyText: string; addError: string }> = {
@@ -38,14 +36,13 @@ export default function ConfigManager({ initialCriadores, initialColores, initia
     picos: { items: initialPicos, apiPath: "/api/picos", placeholder: "Tipo de pico", emptyText: "No hay picos registrados.", addError: "El pico ya existe" },
     mamas: { items: initialMamas, apiPath: "/api/mamas", placeholder: "Nombre de la mama", emptyText: "No hay mamas registradas.", addError: "La mama ya existe" },
     papas: { items: initialPapas, apiPath: "/api/papas", placeholder: "Nombre del papa", emptyText: "No hay papas registrados.", addError: "El papa ya existe" },
-    marcas: { items: initialMarcas, apiPath: "/api/marcas", placeholder: "Nombre de la marca", emptyText: "No hay marcas registradas.", addError: "La marca ya existe" },
   };
 
   const current = config[tab];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
         {tabs.map((t) => (
           <button
             key={t.key}
