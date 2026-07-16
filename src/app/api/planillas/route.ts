@@ -27,6 +27,7 @@ type PlanillaRow = {
 };
 
 type PlanillaBody = {
+  gallo_id?: number | string | null;
   placa?: number | string | null;
   candado?: number | string | null;
   libras?: number | string | null;
@@ -123,27 +124,40 @@ export async function POST(request: NextRequest) {
 
   const placaVal = toIntOrNull(body.placa);
   const candadoVal = toIntOrNull(body.candado);
+  const galloIdDirect = toIntOrNull(body.gallo_id);
 
-  if (placaVal === null && candadoVal === null) {
+  if (galloIdDirect === null && placaVal === null && candadoVal === null) {
     return NextResponse.json(
       { error: "Debes indicar una placa o un candado para identificar el gallo" },
       { status: 400 }
     );
   }
 
-  const { rows: galloRows } = await sql<{ id: number }>`
-    SELECT id FROM gallos
-    WHERE (${placaVal} IS NOT NULL AND placa = ${placaVal})
-       OR (${candadoVal} IS NOT NULL AND candado = ${candadoVal})
-    LIMIT 1`;
-
-  if (galloRows.length === 0) {
-    return NextResponse.json(
-      { error: "No existe un gallo con esa placa o candado. Regístralo primero." },
-      { status: 404 }
-    );
+  let galloId: number;
+  if (galloIdDirect !== null) {
+    const { rows: galloRows } = await sql<{ id: number }>`
+      SELECT id FROM gallos WHERE id = ${galloIdDirect}`;
+    if (galloRows.length === 0) {
+      return NextResponse.json(
+        { error: "El gallo seleccionado no existe." },
+        { status: 404 }
+      );
+    }
+    galloId = galloRows[0].id;
+  } else {
+    const { rows: galloRows } = await sql<{ id: number }>`
+      SELECT id FROM gallos
+      WHERE (${placaVal} IS NOT NULL AND placa = ${placaVal})
+         OR (${candadoVal} IS NOT NULL AND candado = ${candadoVal})
+      LIMIT 1`;
+    if (galloRows.length === 0) {
+      return NextResponse.json(
+        { error: "No existe un gallo con esa placa o candado. Regístralo primero." },
+        { status: 404 }
+      );
+    }
+    galloId = galloRows[0].id;
   }
-  const galloId = galloRows[0].id;
 
   const librasNum = toIntOrNull(body.libras);
   const onzasNum = toIntOrNull(body.onzas);

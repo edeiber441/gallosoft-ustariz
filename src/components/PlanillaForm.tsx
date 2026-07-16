@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Gallo } from "@/lib/types";
 
 type FormState = {
   tipoId: "placa" | "candado";
@@ -42,6 +43,11 @@ export default function PlanillaForm() {
   const router = useRouter();
   const fechaRef = useRef<HTMLSpanElement>(null);
 
+  const [resultados, setResultados] = useState<Gallo[]>([]);
+  const [buscando, setBuscando] = useState(false);
+  const [galloSel, setGalloSel] = useState<Gallo | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const fmt = () =>
       new Date().toLocaleString("es", {
@@ -60,12 +66,33 @@ export default function PlanillaForm() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function validateClient(state: FormState): string | null {
-    const idValue = state.tipoId === "placa" ? state.placa : state.candado;
-    if (!idValue || !/^\d+$/.test(idValue.trim())) {
-      return state.tipoId === "placa"
-        ? "La placa es obligatoria y debe ser solo números"
-        : "El candado es obligatorio y debe ser solo números";
+  function buscarGallo(tipo: "placa" | "candado", valor: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setGalloSel(null);
+    const trimmed = valor.trim();
+    if (!trimmed || !/^\d+$/.test(trimmed)) {
+      setResultados([]);
+      setBuscando(false);
+      return;
+    }
+    setBuscando(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const url = `/api/gallos?${tipo}=${encodeURIComponent(trimmed)}`;
+        const res = await fetch(url);
+        const data = await res.json().catch(() => []);
+        setResultados(Array.isArray(data) ? (data as Gallo[]) : []);
+      } catch {
+        setResultados([]);
+      } finally {
+        setBuscando(false);
+      }
+    }, 350);
+  }
+
+  function validateClient(state: FormState, sel: Gallo | null): string | null {
+    if (!sel) {
+      return "Debes buscar y seleccionar un gallo de la lista";
     }
     const libras = Number(state.libras);
     if (!Number.isInteger(libras) || libras < 1 || libras > 6) {
@@ -96,7 +123,7 @@ export default function PlanillaForm() {
     e.preventDefault();
     setError(null);
 
-    const validationError = validateClient(form);
+    const validationError = validateClient(form, galloSel);
     if (validationError) {
       setError(validationError);
       return;
@@ -105,6 +132,7 @@ export default function PlanillaForm() {
     setSaving(true);
 
     const payload = {
+      gallo_id: galloSel?.id ?? null,
       placa: form.tipoId === "placa" ? Number(form.placa) : null,
       candado: form.tipoId === "candado" ? Number(form.candado) : null,
       libras: Number(form.libras),
@@ -168,7 +196,11 @@ export default function PlanillaForm() {
         <div className="flex gap-2 mb-2">
           <button
             type="button"
-            onClick={() => update("tipoId", "placa")}
+            onClick={() => {
+              update("tipoId", "placa");
+              setResultados([]);
+              setGalloSel(null);
+            }}
             className={`flex-1 rounded-lg px-4 py-2.5 font-headline font-semibold text-sm transition-colors ${
               form.tipoId === "placa" ? segActive : segInactive
             }`}
@@ -177,7 +209,11 @@ export default function PlanillaForm() {
           </button>
           <button
             type="button"
-            onClick={() => update("tipoId", "candado")}
+            onClick={() => {
+              update("tipoId", "candado");
+              setResultados([]);
+              setGalloSel(null);
+            }}
             className={`flex-1 rounded-lg px-4 py-2.5 font-headline font-semibold text-sm transition-colors ${
               form.tipoId === "candado" ? segActive : segInactive
             }`}
@@ -191,7 +227,10 @@ export default function PlanillaForm() {
             inputMode="numeric"
             pattern="[0-9]*"
             value={form.placa}
-            onChange={(e) => update("placa", e.target.value)}
+            onChange={(e) => {
+              update("placa", e.target.value);
+              buscarGallo("placa", e.target.value);
+            }}
             className={inputClass}
             placeholder="Ej: 100"
             min={1}
@@ -202,13 +241,49 @@ export default function PlanillaForm() {
             inputMode="numeric"
             pattern="[0-9]*"
             value={form.candado}
-            onChange={(e) => update("candado", e.target.value)}
+            onChange={(e) => {
+              update("candado", e.target.value);
+              buscarGallo("candado", e.target.value);
+            }}
             className={inputClass}
             placeholder="Ej: 50"
             min={1}
           />
         )}
       </div>
+
+      {buscando && (
+        <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <span className="material-symbols-outlined animate-spin">progress_activity</span>
+          Buscando gallos...
+        </div>
+      )}
+
+      {!buscando && resultados.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className={labelClass}>
+            {resultados.length === 1 ? "Gallo encontrado" : `${resultados.length} gallos encontrados`} — selecciona uno
+          </span>
+          {resultados.map((g) => (
+            <GalloCard
+              key={g.id}
+              gallo={g}
+              selected={galloSel?.id === g.id}
+              onSelect={() => setGalloSel(g)}
+            />
+          ))}
+        </div>
+      )}
+
+      {!buscando && galloSel && (
+        <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2 text-sm text-on-surface flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary">check_circle</span>
+          Gallo seleccionado:{" "}
+          <span className="font-headline font-semibold">
+            {galloSel.placa != null ? `Placa ${galloSel.placa}` : `Candado ${galloSel.candado}`}
+          </span>
+        </div>
+      )}
 
       <div>
         <label className={labelClass}>Fecha del trabajo (automática)</label>
@@ -225,6 +300,19 @@ export default function PlanillaForm() {
 
       <div>
         <label className={labelClass}>Peso *</label>
+
+        {galloSel && (
+          <div className="mb-3 bg-surface-container border border-outline-variant rounded-lg px-4 py-3 flex items-center justify-between">
+            <span className="font-mono text-xs text-on-surface-variant uppercase tracking-wider">
+              Peso registrado
+            </span>
+            <span className="font-headline font-semibold text-on-surface">
+              {galloSel.libras} lb {galloSel.onzas} oz
+            </span>
+          </div>
+        )}
+
+        <span className={`${labelClass} normal-case tracking-normal`}>Peso actual (a registrar)</span>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={`${labelClass} normal-case tracking-normal`}>Libras (1-6)</label>
@@ -263,6 +351,9 @@ export default function PlanillaForm() {
             />
           </div>
         </div>
+        <p className="font-mono text-xs text-on-surface-variant mt-1">
+          El peso actual solo se registra en la planilla; no modifica el peso del gallo.
+        </p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -338,6 +429,54 @@ export default function PlanillaForm() {
         </button>
       </div>
     </form>
+  );
+}
+
+function GalloCard({
+  gallo,
+  selected,
+  onSelect,
+}: {
+  gallo: Gallo;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full text-left bg-surface border rounded-lg p-3 flex items-center gap-3 transition-all ${
+        selected
+          ? "border-primary gold-edge bg-primary/5"
+          : "border-surface-variant hover:border-primary"
+      }`}
+    >
+      <div className="w-14 h-14 shrink-0 rounded bg-surface-container-highest overflow-hidden border border-outline-variant/30 flex items-center justify-center">
+        {gallo.imagen ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={gallo.imagen} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="material-symbols-outlined text-on-surface-variant">image</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-headline font-semibold text-on-surface truncate">
+          {gallo.placa != null ? `Placa ${gallo.placa}` : "Sin placa"}
+          {gallo.candado != null ? ` · Candado ${gallo.candado}` : ""}
+        </div>
+        <div className="font-mono text-xs text-on-surface-variant mt-1 truncate">
+          {gallo.criador_nombre || "Sin criador"} • {gallo.color}
+        </div>
+      </div>
+      <div className="shrink-0 flex items-center gap-1">
+        <span className="px-2 py-1 rounded-full bg-surface-container-highest border border-surface-variant font-mono text-xs text-on-surface" style={{ fontSize: "10px" }}>
+          {gallo.libras} lb {gallo.onzas} oz
+        </span>
+        {selected && (
+          <span className="material-symbols-outlined text-primary">check_circle</span>
+        )}
+      </div>
+    </button>
   );
 }
 
