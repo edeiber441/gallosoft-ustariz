@@ -203,6 +203,54 @@ ON CONFLICT (nombre, usuario_id) DO NOTHING;
 INSERT INTO papas (nombre, usuario_id) VALUES ('Desconocido', NULL)
 ON CONFLICT (nombre, usuario_id) DO NOTHING;
 
+-- ---------------------------------------------------------------------
+-- 6) Tabla de planillas de trabajo
+-- ---------------------------------------------------------------------
+-- Registra el trabajo realizado a un gallo (identificado por su llave
+-- placa o candado, resuelta a gallo_id). La fecha del trabajo toma la
+-- hora del sistema (now()). El peso se compone de libras (1-6) y onzas
+-- (0-15). Los items (salida, mona muerta, topa, alas) tienen una
+-- casilla de verificación y, cuando están marcados, un valor numérico
+-- obligatorio (cantidad o minutos).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS planillas_de_trabajo (
+  id                   SERIAL PRIMARY KEY,
+  gallo_id             INTEGER NOT NULL REFERENCES gallos(id) ON DELETE CASCADE,
+  fecha_trabajo        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  libras               INTEGER NOT NULL CHECK (libras BETWEEN 1 AND 6),
+  onzas                INTEGER NOT NULL CHECK (onzas BETWEEN 0 AND 15),
+  salida               BOOLEAN NOT NULL DEFAULT FALSE,
+  salida_cantidad      INTEGER,
+  mona_muerta          BOOLEAN NOT NULL DEFAULT FALSE,
+  mona_muerta_minutos  INTEGER,
+  topa                 BOOLEAN NOT NULL DEFAULT FALSE,
+  topa_minutos         INTEGER,
+  alas                 BOOLEAN NOT NULL DEFAULT FALSE,
+  alas_cantidad        INTEGER,
+  creado_por           INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  creado_en            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Si el item está marcado, su valor numérico debe estar presente y ser >= 0.
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_salida_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_salida_check
+  CHECK (NOT salida OR (salida_cantidad IS NOT NULL AND salida_cantidad >= 0));
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_mona_muerta_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_mona_muerta_check
+  CHECK (NOT mona_muerta OR (mona_muerta_minutos IS NOT NULL AND mona_muerta_minutos >= 0));
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_topa_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_topa_check
+  CHECK (NOT topa OR (topa_minutos IS NOT NULL AND topa_minutos >= 0));
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_alas_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_alas_check
+  CHECK (NOT alas OR (alas_cantidad IS NOT NULL AND alas_cantidad >= 0));
+
+CREATE INDEX IF NOT EXISTS idx_planillas_gallo ON planillas_de_trabajo (gallo_id);
+CREATE INDEX IF NOT EXISTS idx_planillas_fecha ON planillas_de_trabajo (fecha_trabajo DESC);
+
 -- =====================================================================
 -- FIN DE LA MIGRACIÓN
 -- =====================================================================

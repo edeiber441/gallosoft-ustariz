@@ -97,6 +97,27 @@ export type Sugerencia = {
   gallo_criador: string | null;
 };
 
+export type Planilla = {
+  id: number;
+  gallo_id: number;
+  fecha_trabajo: string;
+  libras: number;
+  onzas: number;
+  salida: boolean;
+  salida_cantidad: number | null;
+  mona_muerta: boolean;
+  mona_muerta_minutos: number | null;
+  topa: boolean;
+  topa_minutos: number | null;
+  alas: boolean;
+  alas_cantidad: number | null;
+  creado_por: number | null;
+  creado_en: string;
+  gallo_placa: number | null;
+  gallo_candado: number | null;
+  gallo_color: string | null;
+};
+
 export type Stats = {
   total: number;
   recientes: Array<{

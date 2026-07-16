@@ -8,6 +8,7 @@ const TABS = [
   { href: "/", icon: "home", label: "Inicio" },
   { href: "/gallos", icon: "search", label: "Buscar" },
   { href: "/gallos/nuevo", icon: "add_circle", label: "Nuevo" },
+  { href: "/planillas", icon: "edit_note", label: "Planilla" },
   { href: "/salir", icon: "logout", label: "Salir" },
 ];
 

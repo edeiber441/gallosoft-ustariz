@@ -78,6 +78,13 @@ export default async function DashboardPage() {
             <span className="material-symbols-outlined">description</span>
             Exportar CSV
           </a>
+          <Link
+            href="/planillas"
+            className="snap-start shrink-0 bg-transparent border border-primary text-primary rounded-lg px-6 py-3 font-headline font-semibold text-lg flex items-center gap-2 hover:bg-primary/10 transition-colors"
+          >
+            <span className="material-symbols-outlined">edit_note</span>
+            Planilla de trabajo
+          </Link>
         </div>
       </section>
 
