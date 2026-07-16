@@ -19,8 +19,19 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "El nombre del color es obligatorio" }, { status: 400 });
   }
 
-  await sql`UPDATE colores SET nombre = ${nombre.trim()} WHERE id = ${parseInt(id)}`;
+  const nuevoNombre = nombre.trim();
+  const { rows } = await sql<{ nombre: string }>`SELECT nombre FROM colores WHERE id = ${parseInt(id)}`;
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "El color no existe" }, { status: 404 });
+  }
+  const nombreViejo = rows[0].nombre;
+
+  await sql`UPDATE colores SET nombre = ${nuevoNombre} WHERE id = ${parseInt(id)}`;
+  if (nombreViejo !== nuevoNombre) {
+    await sql`UPDATE gallos SET color = ${nuevoNombre} WHERE color = ${nombreViejo}`;
+  }
   revalidatePath("/criadores");
+  revalidatePath("/gallos");
   return NextResponse.json({ ok: true });
 }
 

@@ -19,8 +19,19 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "El nombre de la cresta es obligatorio" }, { status: 400 });
   }
 
-  await sql`UPDATE crestas SET nombre = ${nombre.trim()} WHERE id = ${parseInt(id)}`;
+  const nuevoNombre = nombre.trim();
+  const { rows } = await sql<{ nombre: string }>`SELECT nombre FROM crestas WHERE id = ${parseInt(id)}`;
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "La cresta no existe" }, { status: 404 });
+  }
+  const nombreViejo = rows[0].nombre;
+
+  await sql`UPDATE crestas SET nombre = ${nuevoNombre} WHERE id = ${parseInt(id)}`;
+  if (nombreViejo !== nuevoNombre) {
+    await sql`UPDATE gallos SET cresta = ${nuevoNombre} WHERE cresta = ${nombreViejo}`;
+  }
   revalidatePath("/criadores");
+  revalidatePath("/gallos");
   return NextResponse.json({ ok: true });
 }
 
