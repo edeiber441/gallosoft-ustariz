@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   title: "Gallosoft — Galería Ustariz",
   description: "Gestión de gallos de la Galería Ustariz",
   applicationName: "Gallosoft",
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Gallosoft",
