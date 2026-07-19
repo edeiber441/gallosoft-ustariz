@@ -1,12 +1,8 @@
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.gallosoft",
-      "sha256_cert_fingerprints": [
-        "AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89"
-      ]
-    }
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.gallosoft.twa",
+    "sha256_cert_fingerprints": ["9E:24:25:24:E7:E5:4A:2F:F1:9D:82:9E:D8:59:B1:E2:99:A1:E8:B6:78:1A:97:E2:FA:5F:BB:B7:FF:11:9A:7C"]
   }
-]
+}]
