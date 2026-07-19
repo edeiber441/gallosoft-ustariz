@@ -19,6 +19,17 @@ type PlanillaRow = {
   topa_minutos: number | null;
   alas: boolean;
   alas_cantidad: number | null;
+  pierna: boolean;
+  pierna_cantidad: number | null;
+  volteo: boolean;
+  volteo_cantidad: number | null;
+  correteo: boolean;
+  correteo_tiempo: number | null;
+  observaciones: string | null;
+  vitamina: boolean;
+  coccidia: boolean;
+  purgante: boolean;
+  enfermo_tipo: string | null;
   creado_por: number | null;
   creado_en: string;
   gallo_placa: number | null;
@@ -54,6 +65,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
       p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
       p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+      p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+      p.correteo, p.correteo_tiempo, p.observaciones,
+      p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
       p.creado_por, p.creado_en,
       g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
     FROM planillas_de_trabajo p

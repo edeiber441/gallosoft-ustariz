@@ -16,6 +16,9 @@ async function getPlanillas(searchParams: {
       SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
         p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
         p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+        p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+        p.correteo, p.correteo_tiempo, p.observaciones,
+        p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
         p.creado_por, p.creado_en,
         g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
       FROM planillas_de_trabajo p
@@ -29,6 +32,9 @@ async function getPlanillas(searchParams: {
       SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
         p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
         p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+        p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+        p.correteo, p.correteo_tiempo, p.observaciones,
+        p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
         p.creado_por, p.creado_en,
         g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
       FROM planillas_de_trabajo p
@@ -41,6 +47,9 @@ async function getPlanillas(searchParams: {
     SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
       p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
       p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+      p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+      p.correteo, p.correteo_tiempo, p.observaciones,
+      p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
       p.creado_por, p.creado_en,
       g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
     FROM planillas_de_trabajo p
@@ -118,11 +127,15 @@ export default async function PlanillasPage({
                     {p.libras} lb {p.onzas} oz
                   </span>
                 </div>
-                <div className="flex gap-1 mt-1">
+                <div className="flex gap-1 mt-1 flex-wrap justify-end">
                   {p.salida && <Tag>S</Tag>}
                   {p.mona_muerta && <Tag>MM</Tag>}
                   {p.topa && <Tag>T</Tag>}
                   {p.alas && <Tag>A</Tag>}
+                  {p.pierna && <Tag>P</Tag>}
+                  {p.volteo && <Tag>V</Tag>}
+                  {p.correteo && <Tag>C</Tag>}
+                  {p.enfermo_tipo && <Tag className="!bg-error/20 !text-error">{p.enfermo_tipo}</Tag>}
                 </div>
               </div>
             </Link>
@@ -133,9 +146,9 @@ export default async function PlanillasPage({
   );
 }
 
-function Tag({ children }: { children: React.ReactNode }) {
+function Tag({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-mono" style={{ fontSize: "9px" }}>
+    <span className={`px-1.5 py-0.5 rounded bg-primary/15 text-primary font-mono ${className}`} style={{ fontSize: "9px" }}>
       {children}
     </span>
   );

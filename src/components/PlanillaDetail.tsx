@@ -96,6 +96,37 @@ export default function PlanillaDetail({ planilla, canDelete = false }: Props) {
         <ItemDisplay index={2} name="Mona muerta" checked={planilla.mona_muerta} value={planilla.mona_muerta_minutos} unit="Minutos" />
         <ItemDisplay index={3} name="Topa" checked={planilla.topa} value={planilla.topa_minutos} unit="Minutos" />
         <ItemDisplay index={4} name="Alas" checked={planilla.alas} value={planilla.alas_cantidad} unit="Cantidad" />
+        <ItemDisplay index={5} name="Pierna" checked={planilla.pierna} value={planilla.pierna_cantidad} unit="Cantidad" />
+        <ItemDisplay index={6} name="Volteo" checked={planilla.volteo} value={planilla.volteo_cantidad} unit="Cantidad" />
+        <ItemDisplay index={7} name="Correteo" checked={planilla.correteo} value={planilla.correteo_tiempo} unit="Tiempo" />
+      </section>
+
+      {planilla.observaciones && (
+        <section className="bg-surface border border-surface-variant rounded-lg p-5 flex flex-col gap-2">
+          <div className={labelClass}>Observaciones</div>
+          <p className="text-on-surface text-sm whitespace-pre-wrap">{planilla.observaciones}</p>
+        </section>
+      )}
+
+      <section className="bg-surface border border-surface-variant rounded-lg p-5 flex flex-col gap-3">
+        <div className={labelClass}>Suministro</div>
+        <SuministroDisplay name="Vitamina" checked={planilla.vitamina} />
+        <SuministroDisplay name="Coccidia" checked={planilla.coccidia} />
+        <SuministroDisplay name="Purgante" checked={planilla.purgante} />
+      </section>
+
+      <section className="bg-surface border border-surface-variant rounded-lg p-5 flex flex-col gap-3">
+        <div className={labelClass}>Novedades</div>
+        <div className="flex items-center gap-3">
+          <span className="font-headline font-semibold text-on-surface flex-1">Enfermo</span>
+          {planilla.enfermo_tipo ? (
+            <span className="px-3 py-1 rounded-full bg-error/20 text-error font-headline font-semibold text-sm capitalize">
+              {planilla.enfermo_tipo}
+            </span>
+          ) : (
+            <span className="font-mono text-sm text-on-surface-variant">No / Sano</span>
+          )}
+        </div>
       </section>
 
       <div className="flex gap-3 mt-2">
@@ -146,6 +177,20 @@ function ItemDisplay({
       <span className="font-headline font-semibold text-on-surface flex-1">{name}</span>
       <span className="font-mono text-sm text-on-surface-variant">
         {checked ? `${value ?? "-"} ${unit}` : "No"}
+      </span>
+    </div>
+  );
+}
+
+function SuministroDisplay({ name, checked }: { name: string; checked: boolean }) {
+  return (
+    <div className="flex items-center gap-3 border-b border-outline-variant/40 last:border-0 pb-3 last:pb-0">
+      <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "20px" }}>
+        {checked ? "check_box" : "check_box_outline_blank"}
+      </span>
+      <span className="font-headline font-semibold text-on-surface flex-1">{name}</span>
+      <span className="font-mono text-sm text-on-surface-variant">
+        {checked ? "Sí" : "No"}
       </span>
     </div>
   );

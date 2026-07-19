@@ -251,6 +251,54 @@ ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_alas_check
 CREATE INDEX IF NOT EXISTS idx_planillas_gallo ON planillas_de_trabajo (gallo_id);
 CREATE INDEX IF NOT EXISTS idx_planillas_fecha ON planillas_de_trabajo (fecha_trabajo DESC);
 
+-- ---------------------------------------------------------------------
+-- 6.1) Items adicionales y secciones de la planilla (idempotente)
+--   - Items 5-7: pierna (cantidad), volteo (cantidad), correteo (tiempo)
+--   - Observaciones (texto libre)
+--   - Suministro: vitamina, coccidia, purgante (booleanos)
+--   - Novedades / Enfermo: enfermo_tipo (moquillo, viruela, diarrea,
+--     descanso, herido) o NULL si está sano
+-- ---------------------------------------------------------------------
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS pierna BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS pierna_cantidad INTEGER;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS volteo BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS volteo_cantidad INTEGER;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS correteo BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS correteo_tiempo INTEGER;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS observaciones TEXT;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS vitamina BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS coccidia BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS purgante BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE planillas_de_trabajo
+  ADD COLUMN IF NOT EXISTS enfermo_tipo TEXT;
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_pierna_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_pierna_check
+  CHECK (NOT pierna OR (pierna_cantidad IS NOT NULL AND pierna_cantidad >= 0));
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_volteo_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_volteo_check
+  CHECK (NOT volteo OR (volteo_cantidad IS NOT NULL AND volteo_cantidad >= 0));
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_correteo_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_correteo_check
+  CHECK (NOT correteo OR (correteo_tiempo IS NOT NULL AND correteo_tiempo >= 0));
+
+ALTER TABLE planillas_de_trabajo DROP CONSTRAINT IF EXISTS planillas_enfermo_tipo_check;
+ALTER TABLE planillas_de_trabajo ADD CONSTRAINT planillas_enfermo_tipo_check
+  CHECK (enfermo_tipo IS NULL OR enfermo_tipo IN
+    ('moquillo', 'viruela', 'diarrea', 'descanso', 'herido'));
+
 -- =====================================================================
 -- FIN DE LA MIGRACIÓN
 -- =====================================================================

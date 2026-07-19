@@ -19,6 +19,17 @@ type PlanillaRow = {
   topa_minutos: number | null;
   alas: boolean;
   alas_cantidad: number | null;
+  pierna: boolean;
+  pierna_cantidad: number | null;
+  volteo: boolean;
+  volteo_cantidad: number | null;
+  correteo: boolean;
+  correteo_tiempo: number | null;
+  observaciones: string | null;
+  vitamina: boolean;
+  coccidia: boolean;
+  purgante: boolean;
+  enfermo_tipo: string | null;
   creado_por: number | null;
   creado_en: string;
   gallo_placa: number | null;
@@ -40,7 +51,20 @@ type PlanillaBody = {
   topa_minutos?: number | string | null;
   alas?: boolean | null;
   alas_cantidad?: number | string | null;
+  pierna?: boolean | null;
+  pierna_cantidad?: number | string | null;
+  volteo?: boolean | null;
+  volteo_cantidad?: number | string | null;
+  correteo?: boolean | null;
+  correteo_tiempo?: number | string | null;
+  observaciones?: string | null;
+  vitamina?: boolean | null;
+  coccidia?: boolean | null;
+  purgante?: boolean | null;
+  enfermo_tipo?: string | null;
 };
+
+const ENFERMO_VALORES = ["moquillo", "viruela", "diarrea", "descanso", "herido"] as const;
 
 function toIntOrNull(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -58,6 +82,13 @@ function toBool(v: unknown): boolean {
   return v === true || v === "true" || v === 1 || v === "1";
 }
 
+function toTrimmedStringOrNull(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return t.length > 0 ? t : null;
+}
+
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) {
@@ -73,6 +104,9 @@ export async function GET(request: NextRequest) {
       SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
         p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
         p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+        p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+        p.correteo, p.correteo_tiempo, p.observaciones,
+        p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
         p.creado_por, p.creado_en,
         g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
       FROM planillas_de_trabajo p
@@ -87,6 +121,9 @@ export async function GET(request: NextRequest) {
       SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
         p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
         p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+        p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+        p.correteo, p.correteo_tiempo, p.observaciones,
+        p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
         p.creado_por, p.creado_en,
         g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
       FROM planillas_de_trabajo p
@@ -100,6 +137,9 @@ export async function GET(request: NextRequest) {
     SELECT p.id, p.gallo_id, p.fecha_trabajo, p.libras, p.onzas,
       p.salida, p.salida_cantidad, p.mona_muerta, p.mona_muerta_minutos,
       p.topa, p.topa_minutos, p.alas, p.alas_cantidad,
+      p.pierna, p.pierna_cantidad, p.volteo, p.volteo_cantidad,
+      p.correteo, p.correteo_tiempo, p.observaciones,
+      p.vitamina, p.coccidia, p.purgante, p.enfermo_tipo,
       p.creado_por, p.creado_en,
       g.placa AS gallo_placa, g.candado AS gallo_candado, g.color AS gallo_color
     FROM planillas_de_trabajo p
@@ -172,23 +212,50 @@ export async function POST(request: NextRequest) {
   const monaMuerta = toBool(body.mona_muerta);
   const topa = toBool(body.topa);
   const alas = toBool(body.alas);
+  const pierna = toBool(body.pierna);
+  const volteo = toBool(body.volteo);
+  const correteo = toBool(body.correteo);
 
   const salidaCantidad = toIntOrNull(body.salida_cantidad);
   const monaMuertaMinutos = toIntOrNull(body.mona_muerta_minutos);
   const topaMinutos = toIntOrNull(body.topa_minutos);
   const alasCantidad = toIntOrNull(body.alas_cantidad);
+  const piernaCantidad = toIntOrNull(body.pierna_cantidad);
+  const volteoCantidad = toIntOrNull(body.volteo_cantidad);
+  const correteoTiempo = toIntOrNull(body.correteo_tiempo);
 
-  if (salida && (salidaCantidad === null || salidaCantidad < 0)) {
-    return NextResponse.json({ error: "Si marca 'Salida' debe indicar una cantidad válida" }, { status: 400 });
+  const vitamina = toBool(body.vitamina);
+  const coccidia = toBool(body.coccidia);
+  const purgante = toBool(body.purgante);
+
+  const observaciones = toTrimmedStringOrNull(body.observaciones);
+  if (observaciones && observaciones.length > 1000) {
+    return NextResponse.json(
+      { error: "Las observaciones no pueden superar los 1000 caracteres" },
+      { status: 400 }
+    );
   }
-  if (monaMuerta && (monaMuertaMinutos === null || monaMuertaMinutos < 0)) {
-    return NextResponse.json({ error: "Si marca 'Mona muerta' debe indicar los minutos" }, { status: 400 });
-  }
-  if (topa && (topaMinutos === null || topaMinutos < 0)) {
-    return NextResponse.json({ error: "Si marca 'Topa' debe indicar los minutos" }, { status: 400 });
-  }
-  if (alas && (alasCantidad === null || alasCantidad < 0)) {
-    return NextResponse.json({ error: "Si marca 'Alas' debe indicar una cantidad válida" }, { status: 400 });
+
+  const enfermoRaw = toTrimmedStringOrNull(body.enfermo_tipo);
+  const enfermoTipo =
+    enfermoRaw && (ENFERMO_VALORES as readonly string[]).includes(enfermoRaw) ? enfermoRaw : null;
+
+  const checks: Array<[boolean, number | null, string]> = [
+    [salida, salidaCantidad, "Salida"],
+    [monaMuerta, monaMuertaMinutos, "Mona muerta"],
+    [topa, topaMinutos, "Topa"],
+    [alas, alasCantidad, "Alas"],
+    [pierna, piernaCantidad, "Pierna"],
+    [volteo, volteoCantidad, "Volteo"],
+    [correteo, correteoTiempo, "Correteo"],
+  ];
+  for (const [checked, val, label] of checks) {
+    if (checked && (val === null || val < 0)) {
+      return NextResponse.json(
+        { error: `Si marca '${label}' debe indicar un valor numérico válido` },
+        { status: 400 }
+      );
+    }
   }
 
   try {
@@ -199,6 +266,12 @@ export async function POST(request: NextRequest) {
         mona_muerta, mona_muerta_minutos,
         topa, topa_minutos,
         alas, alas_cantidad,
+        pierna, pierna_cantidad,
+        volteo, volteo_cantidad,
+        correteo, correteo_tiempo,
+        observaciones,
+        vitamina, coccidia, purgante,
+        enfermo_tipo,
         creado_por
       )
       VALUES (
@@ -207,6 +280,12 @@ export async function POST(request: NextRequest) {
         ${monaMuerta}, ${monaMuerta ? monaMuertaMinutos : null},
         ${topa}, ${topa ? topaMinutos : null},
         ${alas}, ${alas ? alasCantidad : null},
+        ${pierna}, ${pierna ? piernaCantidad : null},
+        ${volteo}, ${volteo ? volteoCantidad : null},
+        ${correteo}, ${correteo ? correteoTiempo : null},
+        ${observaciones},
+        ${vitamina}, ${coccidia}, ${purgante},
+        ${enfermoTipo},
         ${session.id}
       )
       RETURNING id`;

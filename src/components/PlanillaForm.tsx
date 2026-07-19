@@ -18,6 +18,17 @@ type FormState = {
   topa_minutos: string;
   alas: boolean;
   alas_cantidad: string;
+  pierna: boolean;
+  pierna_cantidad: string;
+  volteo: boolean;
+  volteo_cantidad: string;
+  correteo: boolean;
+  correteo_tiempo: string;
+  observaciones: string;
+  vitamina: boolean;
+  coccidia: boolean;
+  purgante: boolean;
+  enfermo_tipo: string;
 };
 
 const initialState: FormState = {
@@ -34,7 +45,26 @@ const initialState: FormState = {
   topa_minutos: "",
   alas: false,
   alas_cantidad: "",
+  pierna: false,
+  pierna_cantidad: "",
+  volteo: false,
+  volteo_cantidad: "",
+  correteo: false,
+  correteo_tiempo: "",
+  observaciones: "",
+  vitamina: false,
+  coccidia: false,
+  purgante: false,
+  enfermo_tipo: "",
 };
+
+const ENFERMO_OPCIONES: Array<{ value: string; label: string }> = [
+  { value: "moquillo", label: "Moquillo" },
+  { value: "viruela", label: "Viruela" },
+  { value: "diarrea", label: "Diarrea" },
+  { value: "descanso", label: "Descanso" },
+  { value: "herido", label: "Herido" },
+];
 
 export default function PlanillaForm() {
   const [form, setForm] = useState<FormState>(initialState);
@@ -116,6 +146,19 @@ export default function PlanillaForm() {
     if (e3) return e3;
     const e4 = checkNum(state.alas, state.alas_cantidad, "Alas");
     if (e4) return e4;
+    const e5 = checkNum(state.pierna, state.pierna_cantidad, "Pierna");
+    if (e5) return e5;
+    const e6 = checkNum(state.volteo, state.volteo_cantidad, "Volteo");
+    if (e6) return e6;
+    const e7 = checkNum(state.correteo, state.correteo_tiempo, "Correteo");
+    if (e7) return e7;
+    if (state.observaciones.length > 1000) {
+      return "Las observaciones no pueden superar los 1000 caracteres";
+    }
+    const enf = state.enfermo_tipo.trim();
+    if (enf && !ENFERMO_OPCIONES.some((o) => o.value === enf)) {
+      return "El estado de 'Enfermo' no es válido";
+    }
     return null;
   }
 
@@ -145,6 +188,17 @@ export default function PlanillaForm() {
       topa_minutos: form.topa ? Number(form.topa_minutos) : null,
       alas: form.alas,
       alas_cantidad: form.alas ? Number(form.alas_cantidad) : null,
+      pierna: form.pierna,
+      pierna_cantidad: form.pierna ? Number(form.pierna_cantidad) : null,
+      volteo: form.volteo,
+      volteo_cantidad: form.volteo ? Number(form.volteo_cantidad) : null,
+      correteo: form.correteo,
+      correteo_tiempo: form.correteo ? Number(form.correteo_tiempo) : null,
+      observaciones: form.observaciones.trim() || null,
+      vitamina: form.vitamina,
+      coccidia: form.coccidia,
+      purgante: form.purgante,
+      enfermo_tipo: form.enfermo_tipo.trim() || null,
     };
 
     try {
@@ -402,6 +456,84 @@ export default function PlanillaForm() {
           unitLabel="Cantidad"
           inputClass={inputClass}
         />
+
+        <ItemRow
+          index={5}
+          name="Pierna"
+          checked={form.pierna}
+          onToggle={(v) => update("pierna", v)}
+          value={form.pierna_cantidad}
+          onValue={(v) => update("pierna_cantidad", v)}
+          unitLabel="Cantidad"
+          inputClass={inputClass}
+        />
+
+        <ItemRow
+          index={6}
+          name="Volteo"
+          checked={form.volteo}
+          onToggle={(v) => update("volteo", v)}
+          value={form.volteo_cantidad}
+          onValue={(v) => update("volteo_cantidad", v)}
+          unitLabel="Cantidad"
+          inputClass={inputClass}
+        />
+
+        <ItemRow
+          index={7}
+          name="Correteo"
+          checked={form.correteo}
+          onToggle={(v) => update("correteo", v)}
+          value={form.correteo_tiempo}
+          onValue={(v) => update("correteo_tiempo", v)}
+          unitLabel="Tiempo"
+          inputClass={inputClass}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Observaciones</label>
+        <textarea
+          value={form.observaciones}
+          onChange={(e) => update("observaciones", e.target.value.slice(0, 1000))}
+          className={`${inputClass} min-h-[96px] resize-y`}
+          placeholder="Notas del trabajo realizado (opcional, máx. 1000 caracteres)"
+          maxLength={1000}
+        />
+        <p className="font-mono text-xs text-on-surface-variant mt-1 text-right">
+          {form.observaciones.length}/1000
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <label className={labelClass}>Suministro (verificar que se le suministró al gallo)</label>
+        <div className="bg-surface border border-outline-variant rounded-lg p-3 flex flex-wrap gap-4">
+          <SuministroRow name="Vitamina" checked={form.vitamina} onToggle={(v) => update("vitamina", v)} />
+          <SuministroRow name="Coccidia" checked={form.coccidia} onToggle={(v) => update("coccidia", v)} />
+          <SuministroRow name="Purgante" checked={form.purgante} onToggle={(v) => update("purgante", v)} />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <label className={labelClass}>Novedades</label>
+        <div className="bg-surface border border-outline-variant rounded-lg p-3">
+          <label className={`${labelClass} normal-case tracking-normal`}>Enfermo</label>
+          <select
+            value={form.enfermo_tipo}
+            onChange={(e) => update("enfermo_tipo", e.target.value)}
+            className={`${inputClass} appearance-none`}
+          >
+            <option value="">No / Sano</option>
+            {ENFERMO_OPCIONES.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <p className="font-mono text-xs text-on-surface-variant mt-1">
+            Toca el campo para desplegar el menú y seleccionar el estado del gallo.
+          </p>
+        </div>
       </div>
 
       <div className="flex gap-3 mt-3">
@@ -525,5 +657,27 @@ function ItemRow({ index, name, checked, onToggle, value, onValue, unitLabel, in
         </span>
       </div>
     </div>
+  );
+}
+
+function SuministroRow({
+  name,
+  checked,
+  onToggle,
+}: {
+  name: string;
+  checked: boolean;
+  onToggle: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onToggle(e.target.checked)}
+        className="w-5 h-5 accent-[var(--color-primary)] cursor-pointer"
+      />
+      <span className="font-headline font-semibold text-on-surface">{name}</span>
+    </label>
   );
 }

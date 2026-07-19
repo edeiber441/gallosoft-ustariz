@@ -111,6 +111,17 @@ export type Planilla = {
   topa_minutos: number | null;
   alas: boolean;
   alas_cantidad: number | null;
+  pierna: boolean;
+  pierna_cantidad: number | null;
+  volteo: boolean;
+  volteo_cantidad: number | null;
+  correteo: boolean;
+  correteo_tiempo: number | null;
+  observaciones: string | null;
+  vitamina: boolean;
+  coccidia: boolean;
+  purgante: boolean;
+  enfermo_tipo: string | null;
   creado_por: number | null;
   creado_en: string;
   gallo_placa: number | null;
