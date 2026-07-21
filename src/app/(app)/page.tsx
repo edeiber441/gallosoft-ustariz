@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import Link from "next/link";
+import DashboardActions from "@/components/DashboardActions";
 import type { Stats } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -56,36 +57,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="w-full mt-2">
-        <div className="flex gap-3 overflow-x-auto snap-x hide-scrollbar pb-1">
-          <Link
-            href="/gallos"
-            className="snap-start shrink-0 bg-gradient-to-br from-primary to-primary-container text-on-primary-container rounded-lg px-6 py-3 font-headline font-semibold text-lg flex items-center gap-2 hover:brightness-110 transition-all"
-          >
-            <span className="material-symbols-outlined">search</span>
-            Buscar gallo
-          </Link>
-          <Link
-            href="/gallos/nuevo"
-            className="snap-start shrink-0 bg-transparent border border-primary text-primary rounded-lg px-6 py-3 font-headline font-semibold text-lg flex items-center gap-2 hover:bg-primary/10 transition-colors"
-          >
-            <span className="material-symbols-outlined">add</span>
-            Registrar nuevo
-          </Link>
-          <a
-            href="/api/export"
-            className="snap-start shrink-0 bg-surface border border-outline-variant text-on-surface rounded-lg px-6 py-3 font-headline font-semibold text-lg flex items-center gap-2 hover:bg-surface-container-high transition-colors"
-          >
-            <span className="material-symbols-outlined">description</span>
-            Exportar CSV
-          </a>
-          <Link
-            href="/planillas"
-            className="snap-start shrink-0 bg-transparent border border-primary text-primary rounded-lg px-6 py-3 font-headline font-semibold text-lg flex items-center gap-2 hover:bg-primary/10 transition-colors"
-          >
-            <span className="material-symbols-outlined">edit_note</span>
-            Planilla de trabajo
-          </Link>
-        </div>
+        <DashboardActions />
       </section>
 
       <section className="flex flex-col gap-3 mt-2">
