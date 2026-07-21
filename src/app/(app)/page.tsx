@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 async function getStats(): Promise<Stats> {
   const [totalRows, recientes] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total FROM gallos`,
-    sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+    sql`SELECT g.id, g.placa, g.candado, g.color,
+      (g.imagen IS NOT NULL) AS tiene_imagen,
+      g.libras, g.onzas,
       g.creado_en, c.nombre AS criador_nombre
       FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
       ORDER BY g.creado_en DESC LIMIT 6`,
@@ -83,9 +85,15 @@ export default async function DashboardPage() {
               className="bg-surface border border-surface-variant hover:border-primary transition-all rounded-lg p-3 flex items-center gap-4 cursor-pointer group shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
             >
               <div className="w-14 h-14 shrink-0 rounded bg-surface-container-highest overflow-hidden border border-outline-variant/30 flex items-center justify-center">
-                {g.imagen ? (
+                {g.tiene_imagen ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={g.imagen} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                  <img
+                    src={`/api/gallos/${g.id}/imagen`}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                  />
                 ) : (
                   <span className="material-symbols-outlined text-on-surface-variant">image</span>
                 )}

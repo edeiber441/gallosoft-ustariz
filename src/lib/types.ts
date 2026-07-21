@@ -19,6 +19,21 @@ export type Gallo = {
   criador_nombre: string | null;
 };
 
+// Versión ligera para listas: sin `imagen` (base64 pesado) — solo un flag
+// `tiene_imagen` para saber si pedir la foto al endpoint /api/gallos/[id]/imagen.
+export type GalloListItem = {
+  id: number;
+  placa: number | null;
+  candado: number | null;
+  color: string;
+  tiene_imagen: boolean;
+  libras: number;
+  onzas: number;
+  creado_en: string;
+  criador_id: number | null;
+  criador_nombre: string | null;
+};
+
 export type Criador = {
   id: number;
   nombre: string;
@@ -136,7 +151,7 @@ export type Stats = {
     placa: number | null;
     candado: number | null;
     color: string;
-    imagen: string | null;
+    tiene_imagen: boolean;
     libras: number;
     onzas: number;
     creado_en: string;

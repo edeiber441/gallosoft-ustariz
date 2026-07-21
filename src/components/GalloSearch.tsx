@@ -1,28 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Criador } from "@/lib/types";
 
 type Props = {
   initial: { placa?: string; candado?: string; criador_id?: string };
+  criadores: Criador[];
 };
 
-export default function GalloSearch({ initial }: Props) {
+export default function GalloSearch({ initial, criadores }: Props) {
   const [placa, setPlaca] = useState(initial.placa || "");
   const [candado, setCandado] = useState(initial.candado || "");
   const [criadorId, setCriadorId] = useState(initial.criador_id || "");
-  const [criadores, setCriadores] = useState<Criador[]>([]);
   const router = useRouter();
-
-  useEffect(() => {
-    fetch("/api/criadores")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setCriadores(data);
-      })
-      .catch(() => {});
-  }, []);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
