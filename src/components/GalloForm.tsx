@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 import InlineOptionAdd from "@/components/InlineOptionAdd";
+import ImageLightbox from "@/components/ImageLightbox";
 
 type Props = {
   gallo?: import("@/lib/types").Gallo | null;
@@ -567,16 +568,22 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
         <div className="flex flex-col items-center gap-3">
           {form.imagen ? (
             <div className="relative w-full max-w-[200px] aspect-square rounded-lg overflow-hidden border border-outline-variant bg-surface-container">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ImageLightbox
                 src={form.imagen}
-                alt="Vista previa del gallo"
-                className="w-full h-full object-cover"
+                alt="Gallo"
+                trigger={
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.imagen}
+                    alt="Vista previa del gallo"
+                    className="w-full h-full object-cover"
+                  />
+                }
               />
               <button
                 type="button"
                 onClick={() => update("imagen", null)}
-                className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/70 text-on-background flex items-center justify-center"
+                className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/70 text-on-background flex items-center justify-center z-10"
                 aria-label="Quitar imagen"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
