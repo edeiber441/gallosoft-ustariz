@@ -6,15 +6,16 @@ import type { Stats } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 async function getStats(): Promise<Stats> {
-  const { rows: totalRows } = await sql`SELECT COUNT(*)::int AS total FROM gallos`;
-  const total = totalRows[0].total as number;
+  const [totalRows, recientes] = await Promise.all([
+    sql`SELECT COUNT(*)::int AS total FROM gallos`,
+    sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
+      g.creado_en, c.nombre AS criador_nombre
+      FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
+      ORDER BY g.creado_en DESC LIMIT 6`,
+  ]);
+  const total = totalRows.rows[0].total as number;
 
-  const { rows: recientes } = await sql`SELECT g.id, g.placa, g.candado, g.color, g.imagen, g.libras, g.onzas,
-    g.creado_en, c.nombre AS criador_nombre
-    FROM gallos g LEFT JOIN criadores c ON g.criador_id = c.id
-    ORDER BY g.creado_en DESC LIMIT 6`;
-
-  return { total, recientes: recientes as unknown as Stats["recientes"] };
+  return { total, recientes: recientes.rows as unknown as Stats["recientes"] };
 }
 
 function timeAgo(dateStr: string): string {

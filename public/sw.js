@@ -1,9 +1,11 @@
-// Service Worker mínimo para Gallosoft (PWA shell cache)
-// - Cachea el shell estático (HTML, JS, CSS, fuentes, iconos) con stale-while-revalidate
-// - Las rutas /api/* y navegaciones con cookies siempre van a la red (DB remota)
+// Service Worker para Gallosoft (PWA shell cache)
+// - Cachea SOLO assets estáticos (_next/static, iconos, manifest, fuentes) con stale-while-revalidate
+// - Los payloads RSC de Next.js (navegación client-side) SIEMPRE van a la red: nunca se sirven stale
+//   (esto evita que la lista de gallos muestre datos viejos tras crear/editar)
+// - Las rutas /api/* siempre van a la red (DB remota)
 // - El start_url se pre-cachea en install para arranque offline
 
-const VERSION = "gallosoft-v1";
+const VERSION = "gallosoft-v2";
 const SHELL_CACHE = `${VERSION}-shell`;
 const START_URL = "/";
 
@@ -18,6 +20,27 @@ const SHELL_ASSETS = [
   "/favicon.ico",
   "/logo-ustariz.png",
 ];
+
+// Extensiones/paths seguros para cache estático
+const STATIC_PATH_PREFIXES = ["/_next/static/", "/_next/image/"];
+const STATIC_EXT_RE = /\.(?:png|jpg|jpeg|gif|webp|ico|svg|css|js|woff2?|ttf|otf|eot|wasm|webmanifest|json)$/i;
+
+function isStaticAsset(url) {
+  if (STATIC_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return true;
+  if (url.pathname === "/manifest.webmanifest") return true;
+  if (STATIC_EXT_RE.test(url.pathname)) return true;
+  return false;
+}
+
+// Detecta peticiones de payload RSC / navegación client-side de Next.js.
+// Llevan cabeceras como RSC: 1, Next-Router-State-Tree, Next-Router-Prefetch.
+function isRscRequest(req) {
+  if (req.headers.get("RSC")) return true;
+  if (req.headers.get("Next-Router-State-Tree")) return true;
+  if (req.headers.get("Next-Router-Prefetch")) return true;
+  if (req.headers.get("Next-URL")) return true;
+  return false;
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -57,7 +80,15 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navegaciones (documentos): network-first con fallback al start_url cacheado
+  // Payloads RSC / navegación client-side de Next.js: SIEMPRE red, nunca cache.
+  // Si se cachearan stale-while-revalidate, la lista de gallos mostraría datos viejos
+  // tras crear/editar y habría que forzar refresh.
+  if (isRscRequest(req)) {
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // Navegaciones (documentos, carga completa): network-first con fallback al start_url cacheado
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
@@ -72,18 +103,24 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Assets estáticos: stale-while-revalidate
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      const fetchPromise = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === "basic") {
-            const copy = res.clone();
-            caches.open(SHELL_CACHE).then((c) => c.put(req, copy)).catch(() => undefined);
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
-  );
+  if (isStaticAsset(url)) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        const fetchPromise = fetch(req)
+          .then((res) => {
+            if (res && res.status === 200 && res.type === "basic") {
+              const copy = res.clone();
+              caches.open(SHELL_CACHE).then((c) => c.put(req, copy)).catch(() => undefined);
+            }
+            return res;
+          })
+          .catch(() => cached);
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // Cualquier otra misma: red (no cacheamos nada que pueda ser dinámico)
+  event.respondWith(fetch(req).catch(() => caches.match(req)));
 });

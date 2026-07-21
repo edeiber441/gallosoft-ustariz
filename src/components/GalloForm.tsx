@@ -153,25 +153,19 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      fetch("/api/criadores").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/colores").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/crestas").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/patas").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/picos").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/mamas").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/papas").then((r) => (r.ok ? r.json() : [])),
-    ])
-      .then(([criadores, colores, crestas, patas, picos, mamas, papas]) => {
-        if (cancelled) return;
+    // Un solo request combinado en vez de 7 paralelos (menos latencia en móvil)
+    fetch("/api/catalog")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: Partial<CatalogState> | null) => {
+        if (cancelled || !data) return;
         setCatalog({
-          criadores: Array.isArray(criadores) ? criadores : [],
-          colores: Array.isArray(colores) ? colores : [],
-          crestas: Array.isArray(crestas) ? crestas : [],
-          patas: Array.isArray(patas) ? patas : [],
-          picos: Array.isArray(picos) ? picos : [],
-          mamas: Array.isArray(mamas) ? mamas : [],
-          papas: Array.isArray(papas) ? papas : [],
+          criadores: Array.isArray(data.criadores) ? data.criadores : [],
+          colores: Array.isArray(data.colores) ? data.colores : [],
+          crestas: Array.isArray(data.crestas) ? data.crestas : [],
+          patas: Array.isArray(data.patas) ? data.patas : [],
+          picos: Array.isArray(data.picos) ? data.picos : [],
+          mamas: Array.isArray(data.mamas) ? data.mamas : [],
+          papas: Array.isArray(data.papas) ? data.papas : [],
         });
       })
       .catch(() => {
