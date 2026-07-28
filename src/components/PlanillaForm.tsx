@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Gallo } from "@/lib/types";
 
@@ -66,6 +66,68 @@ const ENFERMO_OPCIONES: Array<{ value: string; label: string }> = [
   { value: "herido", label: "Herido" },
 ];
 
+const DRAFT_KEY = "gallosoft:planilla:draft";
+
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+type Draft = { form: FormState; galloSel: Gallo | null };
+
+function snapshotGallo(g: Gallo): Gallo {
+  return { ...g, imagen: null };
+}
+
+function isPristine(f: FormState, g: Gallo | null): boolean {
+  if (g !== null) return false;
+  return (Object.keys(initialState) as Array<keyof FormState>).every(
+    (k) => initialState[k] === f[k],
+  );
+}
+
+function saveDraft(f: FormState, g: Gallo | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (isPristine(f, g)) {
+      window.sessionStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    const snap = g === null ? null : snapshotGallo(g);
+    window.sessionStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ form: f, galloSel: snap } satisfies Draft),
+    );
+  } catch {
+    // almacenamiento lleno o no disponible; no es crítico
+  }
+}
+
+function loadDraft(): Draft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<Draft>;
+    if (!parsed || typeof parsed !== "object" || !parsed.form) return null;
+    const f = parsed.form;
+    if (!f || typeof f.tipoId !== "string") return null;
+    const g =
+      parsed.galloSel && typeof parsed.galloSel === "object" && "id" in parsed.galloSel
+        ? (parsed.galloSel as Gallo)
+        : null;
+    return { form: { ...initialState, ...f }, galloSel: g };
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // noop
+  }
+}
+
 export default function PlanillaForm() {
   const [form, setForm] = useState<FormState>(initialState);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +138,7 @@ export default function PlanillaForm() {
   const [resultados, setResultados] = useState<Gallo[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [galloSel, setGalloSel] = useState<Gallo | null>(null);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -91,6 +154,25 @@ export default function PlanillaForm() {
     }, 30000);
     return () => clearInterval(t);
   }, []);
+
+  useIsoLayoutEffect(() => {
+    const draft = loadDraft();
+    if (!draft) return;
+    setForm(draft.form);
+    setGalloSel(draft.galloSel);
+    setRestoredFromDraft(true);
+  }, []);
+
+  useEffect(() => {
+    saveDraft(form, galloSel);
+  }, [form, galloSel]);
+
+  function discardDraft() {
+    setForm(initialState);
+    setGalloSel(null);
+    setRestoredFromDraft(false);
+    clearDraft();
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -213,6 +295,7 @@ export default function PlanillaForm() {
         setSaving(false);
         return;
       }
+      clearDraft();
       router.push("/planillas");
       router.refresh();
     } catch (err) {
@@ -242,6 +325,28 @@ export default function PlanillaForm() {
           className="text-sm text-error bg-error-container/40 border border-error/30 rounded-lg px-4 py-2"
         >
           {error}
+        </div>
+      )}
+
+      {restoredFromDraft && (
+        <div
+          role="status"
+          className="text-sm text-on-surface bg-surface-container border border-outline-variant rounded-lg px-4 py-2.5 flex items-center gap-2"
+        >
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: "20px" }}>
+            history
+          </span>
+          <span className="flex-1">
+            Se restauró el trabajo en curso guardado (la pantalla se apagó o se salió de la
+            página).
+          </span>
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="font-headline font-semibold text-error hover:underline whitespace-nowrap"
+          >
+            Descartar
+          </button>
         </div>
       )}
 
