@@ -43,3 +43,6 @@ node_modules/
 .next/
 .env.local
 *.log
+
+# local throwaway test scripts (may contain credentials)
+test_e2e.mjs

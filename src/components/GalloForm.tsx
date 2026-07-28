@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Criador, Color, Cresta, Pata, Pico, Mama, Papa } from "@/lib/types";
 import InlineOptionAdd from "@/components/InlineOptionAdd";
@@ -99,6 +99,54 @@ const initialStateFromGallo = (gallo: import("@/lib/types").Gallo | null | undef
   };
 };
 
+const DRAFT_KEY = "gallosoft:gallo:draft";
+
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+const EMPTY_FORM: FormState = initialStateFromGallo(null);
+
+function fieldsEqual(a: FormState, b: FormState): boolean {
+  return (Object.keys(EMPTY_FORM) as Array<keyof FormState>).every((k) => a[k] === b[k]);
+}
+
+function saveDraft(f: FormState) {
+  if (typeof window === "undefined") return;
+  // No se persiste la imagen base64 (puede superar la cuota de sessionStorage).
+  const draftForm: FormState = { ...f, imagen: null };
+  const pristine = fieldsEqual(draftForm, { ...EMPTY_FORM, imagen: null });
+  try {
+    if (pristine) {
+      window.sessionStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draftForm));
+  } catch {
+    // almacenamiento lleno o no disponible; no es crítico
+  }
+}
+
+function loadDraft(): FormState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<FormState>;
+    if (!parsed || typeof parsed !== "object" || typeof parsed.tipoId !== "string") return null;
+    return { ...EMPTY_FORM, ...parsed, imagen: null };
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // noop
+  }
+}
+
 function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -146,6 +194,7 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -179,6 +228,29 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
       cancelled = true;
     };
   }, []);
+
+  // Persistir borrador SOLO en modo creación (sin gallo) para recuperar
+  // el avance si la pantalla del móvil se apaga o se sale de la página.
+  // En modo edición no se persiste para no sobreescribir datos frescos del servidor.
+  // La imagen base64 no se persiste (puede superar la cuota de sessionStorage).
+  useIsoLayoutEffect(() => {
+    if (gallo) return;
+    const draft = loadDraft();
+    if (!draft) return;
+    setForm(draft);
+    setRestoredFromDraft(true);
+  }, [gallo]);
+
+  useEffect(() => {
+    if (gallo) return;
+    saveDraft(form);
+  }, [form, gallo]);
+
+  function discardDraft() {
+    setForm(EMPTY_FORM);
+    setRestoredFromDraft(false);
+    clearDraft();
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -323,6 +395,7 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
           return;
         }
 
+        clearDraft();
         router.push("/gallos");
         router.refresh();
         return;
@@ -343,6 +416,7 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
         return;
       }
 
+      clearDraft();
       router.push("/gallos");
       router.refresh();
     } catch (err) {
@@ -370,6 +444,7 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
         setSaving(false);
         return;
       }
+      clearDraft();
       router.push("/gallos");
       router.refresh();
     } catch (err) {
@@ -400,6 +475,28 @@ export default function GalloForm({ gallo, canEdit = true, canDelete = true, isO
           className="text-sm text-error bg-error-container/40 border border-error/30 rounded-lg px-4 py-2"
         >
           {error}
+        </div>
+      )}
+
+      {restoredFromDraft && (
+        <div
+          role="status"
+          className="text-sm text-on-surface bg-surface-container border border-outline-variant rounded-lg px-4 py-2.5 flex items-center gap-2"
+        >
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: "20px" }}>
+            history
+          </span>
+          <span className="flex-1">
+            Se restauró el avance guardado (la pantalla se apagó o se salió de la página). La
+            imagen no se conserva; tendrás que volver a seleccionarla.
+          </span>
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="font-headline font-semibold text-error hover:underline whitespace-nowrap"
+          >
+            Descartar
+          </button>
         </div>
       )}
 
