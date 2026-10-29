@@ -52,3 +52,14 @@ Herramienta web móvil-first para gestionar gallos de la Galería Ustariz.
 3. Conectar una base de datos Vercel Postgres
 4. Añadir `JWT_SECRET` como variable de entorno
 5. Ejecutar `npm run seed` desde eldashboard de Vercel o localmente con la DATABASE_URL de producción
+
+## Evitar que Supabase pause el proyecto
+
+El plan gratis de Supabase pausa el proyecto tras 7 días sin actividad. `vercel.json`
+define un Cron de Vercel que llama a `/api/keepalive` todos los días a las 12:00 UTC;
+ese endpoint hace una consulta real a la base de datos.
+
+- Solo corre en el deploy de **producción** de Vercel.
+- Recomendado: añadir `CRON_SECRET` (texto largo aleatorio) en las variables de entorno
+  de Vercel. Vercel lo envía automáticamente y el endpoint rechaza llamadas sin él.
+- Se puede ver cada ejecución en Vercel → proyecto → Settings → Cron Jobs.
